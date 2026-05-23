@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -222,9 +223,15 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
     room = rooms[room_id]
     await websocket.accept()
 
-    user_id = uuid.uuid4().hex[:6]
-    color = room.next_color()
-    name = room.next_player_name()
+    params = websocket.query_params
+    stored_id    = params.get("user_id", "")
+    stored_color = params.get("color", "")
+    stored_name  = params.get("name", "").strip()[:20]
+
+    user_id = stored_id    if re.fullmatch(r"[0-9a-f]{6}", stored_id)           else uuid.uuid4().hex[:6]
+    color   = stored_color if re.fullmatch(r"#[0-9a-fA-F]{6}", stored_color)    else room.next_color()
+    name    = stored_name  if stored_name                                         else room.next_player_name()
+
     room.clients[websocket] = {"user_id": user_id, "color": color, "name": name, "cursor": None}
 
     logger.info("[%s] %s (%s) joined | players=%d", room_id, name, user_id, len(room.clients))

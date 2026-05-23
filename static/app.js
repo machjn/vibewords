@@ -12,6 +12,17 @@ let users = {};        // user_id -> { color, name, cursor }
 let sel = { row: -1, col: -1, dir: 'across' };
 let pencilMode = false;
 
+// ── Identity persistence ───────────────────────────────────────────────────
+
+function saveIdentity() {
+  localStorage.setItem('vw-identity', JSON.stringify({ userId: myUserId, color: myColor, name: myName }));
+}
+
+function loadIdentity() {
+  try { return JSON.parse(localStorage.getItem('vw-identity') || '{}'); }
+  catch { return {}; }
+}
+
 // ── WebSocket ──────────────────────────────────────────────────────────────
 
 const MAX_RETRIES = 8;
@@ -22,7 +33,13 @@ let _retryTimer = null;
 
 function connect() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  socket = new WebSocket(`${proto}://${location.host}/ws/${roomId}`);
+  const { userId, color, name } = loadIdentity();
+  const params = new URLSearchParams();
+  if (userId) params.set('user_id', userId);
+  if (color)  params.set('color', color);
+  if (name)   params.set('name', name);
+  const qs = params.size ? '?' + params.toString() : '';
+  socket = new WebSocket(`${proto}://${location.host}/ws/${roomId}${qs}`);
 
   socket.onopen = () => {
     setStatus('connected');
@@ -61,6 +78,7 @@ function handleMessage(msg) {
       myUserId = msg.user_id;
       myColor  = msg.color;
       myName   = msg.name;
+      saveIdentity();
       puzzle   = msg.puzzle;
       grid        = msg.grid || {};
       pencilGrid  = msg.pencil_grid || {};
@@ -311,6 +329,7 @@ function handleNameBlur() {
   if (!newName) { nameEl.textContent = myName; return; }
   if (newName !== myName) {
     myName = newName;
+    saveIdentity();
     send({ type: 'rename', name: myName });
   }
 }
