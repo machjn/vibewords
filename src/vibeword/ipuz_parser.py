@@ -15,6 +15,7 @@ class Cell:
 class Clue:
     number: int
     text: str
+    label: str = ""  # display label, e.g. "25, 11" for linked clues
 
 
 @dataclass
@@ -28,6 +29,7 @@ class Puzzle:
     saved: Optional[list] = None    # list[list[str]] — previously entered letters
     title: str = ""
     author: str = ""
+    links: dict = field(default_factory=dict)  # {direction: {clue_num: [chain]}}
 
 
 def parse_ipuz(data) -> Puzzle:
@@ -84,6 +86,7 @@ def parse_ipuz(data) -> Puzzle:
         saved=saved,
         title=raw.get("title", ""),
         author=raw.get("author", ""),
+        links=raw.get("links", {}),
     )
 
 
@@ -101,6 +104,7 @@ def _parse_clues(raw_clues: list) -> list:
     for item in raw_clues:
         if isinstance(item, list) and len(item) >= 2:
             raw_num = item[0]
+            label = str(raw_num)
             try:
                 number = int(raw_num)
             except (ValueError, TypeError):
@@ -109,7 +113,8 @@ def _parse_clues(raw_clues: list) -> list:
                     number = int(str(raw_num).split(",")[0].strip())
                 except ValueError:
                     number = 0
-            clues.append(Clue(number=number, text=str(item[1])))
+            clues.append(Clue(number=number, text=str(item[1]), label=label))
         elif isinstance(item, dict):
-            clues.append(Clue(number=int(item["number"]), text=str(item.get("clue", ""))))
+            number = int(item["number"])
+            clues.append(Clue(number=number, text=str(item.get("clue", "")), label=str(number)))
     return clues

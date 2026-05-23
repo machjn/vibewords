@@ -8,7 +8,7 @@ from __future__ import annotations
 import html
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
 from urllib.request import Request, urlopen
@@ -33,6 +33,7 @@ class Slot:
     length: int
     clue: str
     solution: str | None
+    group: list = field(default_factory=list)
 
 
 def normalise_url(value: str, crossword_type: str = "cryptic") -> str:
@@ -100,6 +101,7 @@ def _parse_entries(data: dict[str, Any]) -> list[Slot]:
             length=int(e["length"]),
             clue=clean_clue_text(str(e.get("clue", ""))),
             solution=(str(e["solution"]).upper() if e.get("solution") else None),
+            group=list(e.get("group") or []),
         ))
     return slots
 
@@ -174,6 +176,37 @@ def _build_clues(slots: list[Slot]) -> dict[str, list[list[Any]]]:
     return clues
 
 
+def _build_links(slots: list[Slot]) -> dict[str, dict[int, list[int]]]:
+    """Return a map {direction: {clue_num: [ordered chain of clue nums]}} for linked clues."""
+    links: dict[str, dict[int, list[int]]] = {"Across": {}, "Down": {}}
+    id_to_slot = {s.id: s for s in slots}
+    seen: set[tuple] = set()
+
+    for slot in slots:
+        if len(slot.group) <= 1:
+            continue
+        key = tuple(slot.group)
+        if key in seen:
+            continue
+        seen.add(key)
+
+        ordered = [id_to_slot[gid] for gid in slot.group if gid in id_to_slot]
+        if len(ordered) <= 1:
+            continue
+        # All entries in a group must share a direction for our purposes
+        dirs = {s.direction for s in ordered}
+        if len(dirs) != 1:
+            continue
+
+        chain = [s.number for s in ordered]
+        dir_key = ordered[0].direction
+        for num in chain:
+            links[dir_key][num] = chain
+
+    # Drop empty direction keys to keep the output tidy
+    return {d: m for d, m in links.items() if m}
+
+
 def convert(data: dict[str, Any], origin: str, include_solutions: bool = True) -> dict[str, Any]:
     """Convert a raw Guardian crossword dict to an IPUZ dict."""
     dims = data["dimensions"]
@@ -212,6 +245,9 @@ def convert(data: dict[str, Any], origin: str, include_solutions: bool = True) -
     ipuz = {k: v for k, v in ipuz.items() if v is not None}
     if solution is not None:
         ipuz["solution"] = solution
+    links = _build_links(slots)
+    if links:
+        ipuz["links"] = links
     return ipuz
 
 

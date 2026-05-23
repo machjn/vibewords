@@ -212,7 +212,7 @@ function renderClueList(containerId, clues, dir) {
     const li = document.createElement('li');
     li.className = 'clue-item';
     li.id = `clue-${dir[0]}-${clue.number}`;
-    li.innerHTML = `<span class="clue-num">${clue.number}.</span>${escHtml(clue.text)}`;
+    li.innerHTML = `<span class="clue-num">${escHtml(clue.label || String(clue.number))}.</span>${escHtml(clue.text)}`;
     li.addEventListener('click', () => jumpToClue(clue.number, dir));
     el.appendChild(li);
   });
@@ -265,8 +265,11 @@ function updateWordCorrectness(r, c, dir) {
     const inp = getInput(wr, wc);
     if (inp) inp.classList.toggle('word-correct', correct);
   });
-  const clueEl = document.getElementById(`clue-${dir[0]}-${num}`);
-  if (clueEl) clueEl.classList.toggle('word-correct', correct);
+  // Mark every clue item in the chain (primary + continuations).
+  getChain(num, dir).forEach(chainNum => {
+    const clueEl = document.getElementById(`clue-${dir[0]}-${chainNum}`);
+    if (clueEl) clueEl.classList.toggle('word-correct', correct);
+  });
 }
 
 // Re-evaluates correctness only for words already marked green.
@@ -416,7 +419,8 @@ function selectCell(r, c, dir) {
   send({ type: 'cursor_move', row: r, col: c, direction: dir });
 }
 
-function wordCells(r, c, dir) {
+// Single contiguous run of white cells containing (r, c) in direction dir.
+function runCells(r, c, dir) {
   const cells = [];
   if (dir === 'across') {
     let sc = c;
@@ -430,11 +434,49 @@ function wordCells(r, c, dir) {
   return cells;
 }
 
+// All cells in the linked-clue chain that contains (r, c) in direction dir,
+// ordered as the answer should be filled in.  Falls back to runCells for
+// ordinary (non-linked) clues.
+function wordCells(r, c, dir) {
+  const run = runCells(r, c, dir);
+  if (!run.length) return run;
+  const startNum = puzzle.cells[run[0][0]][run[0][1]].number;
+  if (!startNum) return run;
+  const chain = getChain(startNum, dir);
+  if (chain.length <= 1) return run;
+  const all = [];
+  for (const num of chain) {
+    const pos = findClueStart(num);
+    if (pos) all.push(...runCells(pos.row, pos.col, dir));
+  }
+  return all;
+}
+
 function wordLength(r, c, dir) { return wordCells(r, c, dir).length; }
 
+// Returns the clue number of the first run in the chain (the display number).
 function wordStartNumber(r, c, dir) {
-  const cells = wordCells(r, c, dir);
-  return cells.length ? puzzle.cells[cells[0][0]][cells[0][1]].number : null;
+  const run = runCells(r, c, dir);
+  if (!run.length) return null;
+  const startNum = puzzle.cells[run[0][0]][run[0][1]].number;
+  if (!startNum) return null;
+  const chain = getChain(startNum, dir);
+  return chain[0];  // head of chain is the primary clue number
+}
+
+// Returns the ordered chain [num, …] for a clue, or [num] if not linked.
+function getChain(num, dir) {
+  if (!puzzle.links) return [num];
+  const dirKey = dir === 'across' ? 'Across' : 'Down';
+  return (puzzle.links[dirKey] || {})[num] || [num];
+}
+
+// Returns {row, col} of the cell numbered `num`, or null.
+function findClueStart(num) {
+  for (let r = 0; r < puzzle.height; r++)
+    for (let c = 0; c < puzzle.width; c++)
+      if (puzzle.cells[r][c].number === num) return { row: r, col: c };
+  return null;
 }
 
 function flip(dir) { return dir === 'across' ? 'down' : 'across'; }
@@ -502,14 +544,23 @@ function handleBackspace(r, c) {
   if (grid[key] || pencilGrid[key]) {
     commitCell(r, c, '');
   } else {
-    const [pr, pc] = stepBack(r, c, sel.dir);
-    if (pr !== -1) { commitCell(pr, pc, ''); selectCell(pr, pc, sel.dir); }
+    const cells = wordCells(r, c, sel.dir);
+    const idx = cells.findIndex(([wr, wc]) => wr === r && wc === c);
+    if (idx > 0) {
+      const [pr, pc] = cells[idx - 1];
+      commitCell(pr, pc, '');
+      selectCell(pr, pc, sel.dir);
+    }
   }
 }
 
 function advance(r, c, dir) {
-  const [nr, nc] = stepForward(r, c, dir);
-  if (nr !== -1) selectCell(nr, nc, dir);
+  const cells = wordCells(r, c, dir);
+  const idx = cells.findIndex(([wr, wc]) => wr === r && wc === c);
+  if (idx !== -1 && idx < cells.length - 1) {
+    const [nr, nc] = cells[idx + 1];
+    selectCell(nr, nc, dir);
+  }
 }
 
 function stepForward(r, c, dir) {
@@ -544,14 +595,17 @@ function moveBy(r, c, dr, dc) {
 
 function allWords() {
   const words = [];
-  const findStart = num => {
-    for (let r = 0; r < puzzle.height; r++)
-      for (let c = 0; c < puzzle.width; c++)
-        if (puzzle.cells[r][c].number === num) return { row: r, col: c };
-    return null;
-  };
-  puzzle.clues.across.forEach(cl => { const p = findStart(cl.number); if (p) words.push({ ...p, dir: 'across' }); });
-  puzzle.clues.down.forEach(cl =>   { const p = findStart(cl.number); if (p) words.push({ ...p, dir: 'down' }); });
+  puzzle.clues.across.forEach(cl => {
+    // Skip continuation entries — Tab only visits the chain head.
+    if (getChain(cl.number, 'across')[0] !== cl.number) return;
+    const pos = findClueStart(cl.number);
+    if (pos) words.push({ row: pos.row, col: pos.col, dir: 'across' });
+  });
+  puzzle.clues.down.forEach(cl => {
+    if (getChain(cl.number, 'down')[0] !== cl.number) return;
+    const pos = findClueStart(cl.number);
+    if (pos) words.push({ row: pos.row, col: pos.col, dir: 'down' });
+  });
   return words;
 }
 
@@ -576,9 +630,10 @@ function prevWord() {
 }
 
 function jumpToClue(number, dir) {
-  for (let r = 0; r < puzzle.height; r++)
-    for (let c = 0; c < puzzle.width; c++)
-      if (puzzle.cells[r][c].number === number) { selectCell(r, c, dir); return; }
+  // Always jump to the head of the chain so selection starts at the first run.
+  const head = getChain(number, dir)[0];
+  const pos = findClueStart(head);
+  if (pos) selectCell(pos.row, pos.col, dir);
 }
 
 // ── Clue panel ─────────────────────────────────────────────────────────────
@@ -597,30 +652,37 @@ function updateOtherPlayersClues() {
     const { row, col, direction } = user.cursor;
     const num = wordStartNumber(row, col, direction);
     if (num == null) continue;
-    const clueEl = document.getElementById(`clue-${direction[0]}-${num}`);
-    if (!clueEl || clueEl.classList.contains('active')) continue;
-    clueEl.style.background = hexToRgba(user.color, 0.12);
-    clueEl.style.borderLeftColor = hexToRgba(user.color, 0.5);
-    clueEl.setAttribute('data-other-highlight', userId);
+    getChain(num, direction).forEach(chainNum => {
+      const clueEl = document.getElementById(`clue-${direction[0]}-${chainNum}`);
+      if (!clueEl || clueEl.classList.contains('active')) return;
+      clueEl.style.background = hexToRgba(user.color, 0.12);
+      clueEl.style.borderLeftColor = hexToRgba(user.color, 0.5);
+      clueEl.setAttribute('data-other-highlight', userId);
+    });
   }
 }
 
 function updateActiveClue(r, c, dir) {
   const num = wordStartNumber(r, c, dir);
   if (num == null) return;
-  const clueEl = document.getElementById(`clue-${dir[0]}-${num}`);
-  if (clueEl) {
+  // Highlight every clue item in the chain (primary + continuations).
+  getChain(num, dir).forEach(chainNum => {
+    const clueEl = document.getElementById(`clue-${dir[0]}-${chainNum}`);
+    if (!clueEl) return;
     clueEl.classList.add('active');
     if (myColor) {
       clueEl.style.background = hexToRgba(myColor, 0.18);
       clueEl.style.borderLeftColor = myColor;
     }
-    clueEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }
+  });
+  // Scroll the primary clue into view.
+  const primaryEl = document.getElementById(`clue-${dir[0]}-${num}`);
+  if (primaryEl) primaryEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   const clueList = dir === 'across' ? puzzle.clues.across : puzzle.clues.down;
   const clue = clueList.find(cl => cl.number === num);
-  const label = dir === 'across' ? 'Across' : 'Down';
-  document.getElementById('clue-display').textContent = clue ? `${num} ${label}: ${clue.text}` : '';
+  const dirLabel = dir === 'across' ? 'Across' : 'Down';
+  const numLabel = clue ? (clue.label || String(clue.number)) : String(num);
+  document.getElementById('clue-display').textContent = clue ? `${numLabel} ${dirLabel}: ${clue.text}` : '';
 }
 
 function toggleClueDisplay() {

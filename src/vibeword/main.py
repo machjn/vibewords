@@ -68,12 +68,14 @@ class Room:
                 for row in self.puzzle.cells
             ],
             "clues": {
-                "across": [{"number": c.number, "text": c.text} for c in self.puzzle.clues_across],
-                "down": [{"number": c.number, "text": c.text} for c in self.puzzle.clues_down],
+                "across": [{"number": c.number, "label": c.label or str(c.number), "text": c.text} for c in self.puzzle.clues_across],
+                "down": [{"number": c.number, "label": c.label or str(c.number), "text": c.text} for c in self.puzzle.clues_down],
             },
         }
         if self.puzzle.solution:
             d["solution"] = self.puzzle.solution
+        if self.puzzle.links:
+            d["links"] = self.puzzle.links
         return d
 
     def users_list(self) -> list:
