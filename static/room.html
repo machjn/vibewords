@@ -144,6 +144,10 @@
     .action-btn:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
     .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
     .action-btn.active { background: #e67e22; border-color: #e67e22; }
+    #clue-mode-btn { background: #e67e22; border-color: #e67e22; }
+    #clue-mode-btn:hover { background: #d35400; border-color: #d35400; }
+    #export-btn { background: #5dade2; border-color: #5dade2; }
+    #export-btn:hover { background: #3498db; border-color: #3498db; }
 
     /* Pencil and revealed letter styles */
     .cell input.pencil {
@@ -402,6 +406,7 @@
     <button class="action-btn" id="check-all-btn" disabled title="Remove all wrong letters in the grid">Check All</button>
     <button class="action-btn" id="clear-btn" disabled title="Clear non-crossing letters in the selected word">Clear</button>
     <button class="action-btn" id="clue-mode-btn" title="Toggle clue layout">Clues: Rows</button>
+    <button class="action-btn" id="export-btn" title="Export current progress as .ipuz">&#11015; Export</button>
   </div>
 
   <div class="main">

@@ -89,7 +89,13 @@ def _make_room(puzzle: Puzzle) -> str:
     if not puzzle.cells:
         raise HTTPException(status_code=400, detail="Puzzle has no grid data")
     room_id = uuid.uuid4().hex[:8]
-    rooms[room_id] = Room(puzzle)
+    room = Room(puzzle)
+    if puzzle.saved:
+        for r, row in enumerate(puzzle.saved):
+            for c, letter in enumerate(row):
+                if letter:
+                    room.grid[f"{r},{c}"] = letter
+    rooms[room_id] = room
     return room_id
 
 

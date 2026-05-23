@@ -25,6 +25,7 @@ class Puzzle:
     clues_across: list  # list[Clue]
     clues_down: list  # list[Clue]
     solution: Optional[list] = None  # list[list[str]]
+    saved: Optional[list] = None    # list[list[str]] — previously entered letters
     title: str = ""
     author: str = ""
 
@@ -61,6 +62,18 @@ def parse_ipuz(data) -> Puzzle:
                     sol_row.append(str(cell))
             solution.append(sol_row)
 
+    saved = None
+    if "saved" in raw:
+        saved = []
+        for row in raw["saved"]:
+            saved_row = []
+            for cell in row:
+                if isinstance(cell, str) and cell not in ("#", "0"):
+                    saved_row.append(cell.upper()[:1])
+                else:
+                    saved_row.append("")
+            saved.append(saved_row)
+
     return Puzzle(
         width=width,
         height=height,
@@ -68,6 +81,7 @@ def parse_ipuz(data) -> Puzzle:
         clues_across=across,
         clues_down=down,
         solution=solution,
+        saved=saved,
         title=raw.get("title", ""),
         author=raw.get("author", ""),
     )

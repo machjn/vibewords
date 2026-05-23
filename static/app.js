@@ -606,6 +606,53 @@ function updateActionButtons() {
   document.getElementById('clear-btn').disabled         = !hasSelection;
 }
 
+// ── Export ─────────────────────────────────────────────────────────────────
+
+function exportIpuz() {
+  if (!puzzle) return;
+
+  const puzzleGrid = puzzle.cells.map(row =>
+    row.map(cell => {
+      if (cell.black) return '#';
+      if (cell.number) return { cell: cell.number };
+      return 0;
+    })
+  );
+
+  const savedGrid = puzzle.cells.map((row, r) =>
+    row.map((cell, c) => {
+      if (cell.black) return '#';
+      return grid[`${r},${c}`] || pencilGrid[`${r},${c}`] || 0;
+    })
+  );
+
+  const ipuz = {
+    version: 'http://ipuz.org/v2',
+    kind: ['http://ipuz.org/crossword#1'],
+    title: puzzle.title || '',
+    author: puzzle.author || '',
+    block: '#',
+    empty: '0',
+    dimensions: { width: puzzle.width, height: puzzle.height },
+    puzzle: puzzleGrid,
+    clues: {
+      Across: puzzle.clues.across.map(cl => [cl.number, cl.text]),
+      Down:   puzzle.clues.down.map(cl   => [cl.number, cl.text]),
+    },
+    saved: savedGrid,
+  };
+
+  if (puzzle.solution) ipuz.solution = puzzle.solution;
+
+  const blob = new Blob([JSON.stringify(ipuz, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `${(puzzle.title || 'vibeword').replace(/[^a-z0-9]/gi, '_')}.ipuz`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ── Pencil mode ────────────────────────────────────────────────────────────
 
 function togglePencil() {
@@ -627,6 +674,7 @@ document.getElementById('reveal-word-btn').addEventListener('click', revealWord)
 document.getElementById('check-btn').addEventListener('click', checkWord);
 document.getElementById('check-all-btn').addEventListener('click', checkAll);
 document.getElementById('clear-btn').addEventListener('click', clearClue);
+document.getElementById('export-btn').addEventListener('click', exportIpuz);
 
 document.getElementById('share-btn').addEventListener('click', async () => {
   const btn = document.getElementById('share-btn');
@@ -643,7 +691,6 @@ function applyStreamMode(on) {
   const wrap = document.getElementById('clue-sections-wrap');
   const btn  = document.getElementById('clue-mode-btn');
   wrap.classList.toggle('stream-mode', on);
-  btn.classList.toggle('active', on);
   btn.textContent = on ? 'Clues: Columns' : 'Clues: Rows';
   if (on) localStorage.setItem('vw-stream', '1');
   else    localStorage.removeItem('vw-stream');
