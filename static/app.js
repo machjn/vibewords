@@ -12,6 +12,7 @@ let users = {};        // user_id -> { color, name, cursor }
 let sel = { row: -1, col: -1, dir: 'across' };
 let pencilMode = false;
 let showOthers = true;
+let revealedWords = new Set(); // "a-5" / "d-12" — words the local player revealed
 
 // ── Identity persistence ───────────────────────────────────────────────────
 
@@ -248,6 +249,40 @@ function fitGridToScreen() {
 
 // ── Cell display ───────────────────────────────────────────────────────────
 
+function updateWordCorrectness(r, c, dir) {
+  if (!puzzle || !puzzle.solution) return;
+  const num = wordStartNumber(r, c, dir);
+  if (num == null) return;
+  const cells = wordCells(r, c, dir);
+  const wordKey = `${dir[0]}-${num}`;
+  const correct = !revealedWords.has(wordKey) && cells.length > 0 && cells.every(([wr, wc]) => {
+    const letter = grid[`${wr},${wc}`];
+    if (!letter) return false;
+    const sol = ((puzzle.solution[wr] || [])[wc] || '').toUpperCase();
+    return !!sol && sol !== '#' && letter === sol;
+  });
+  cells.forEach(([wr, wc]) => {
+    const inp = getInput(wr, wc);
+    if (inp) inp.classList.toggle('word-correct', correct);
+  });
+  const clueEl = document.getElementById(`clue-${dir[0]}-${num}`);
+  if (clueEl) clueEl.classList.toggle('word-correct', correct);
+}
+
+// Re-evaluates correctness only for words already marked green.
+// Called on any cell change so green is withdrawn if the word becomes wrong,
+// but never added (that's checkWord/checkAll's job).
+function recheckWordCorrectness(r, c) {
+  for (const dir of ['across', 'down']) {
+    const num = wordStartNumber(r, c, dir);
+    if (num == null) continue;
+    const clueEl = document.getElementById(`clue-${dir[0]}-${num}`);
+    if (clueEl && clueEl.classList.contains('word-correct')) {
+      updateWordCorrectness(r, c, dir);
+    }
+  }
+}
+
 function updateCellDisplay(r, c) {
   const inp = getInput(r, c);
   if (!inp) return;
@@ -257,6 +292,7 @@ function updateCellDisplay(r, c) {
   inp.value = pencilLetter || confirmedLetter || '';
   inp.classList.toggle('pencil', !!pencilLetter);
   inp.classList.toggle('revealed', !pencilLetter && !!confirmedLetter && revealedCells.has(key));
+  recheckWordCorrectness(r, c);
 }
 
 // ── Per-player selection overlays ──────────────────────────────────────────
@@ -600,6 +636,8 @@ function toggleClueDisplay() {
 
 function revealLetter() {
   if (!puzzle.solution || sel.row < 0) return;
+  const num = wordStartNumber(sel.row, sel.col, sel.dir);
+  if (num != null) revealedWords.add(`${sel.dir[0]}-${num}`);
   const { row, col } = sel;
   const letter = ((puzzle.solution[row] || [])[col] || '').toUpperCase();
   if (letter && letter !== '#') commitCell(row, col, letter, { isPencil: false, isRevealed: true });
@@ -607,6 +645,8 @@ function revealLetter() {
 
 function revealWord() {
   if (!puzzle.solution || sel.row < 0) return;
+  const num = wordStartNumber(sel.row, sel.col, sel.dir);
+  if (num != null) revealedWords.add(`${sel.dir[0]}-${num}`);
   wordCells(sel.row, sel.col, sel.dir).forEach(([r, c]) => {
     const letter = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
     if (letter && letter !== '#') commitCell(r, c, letter, { isPencil: false, isRevealed: true });
@@ -624,6 +664,7 @@ function checkWord() {
     const correct = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
     if (correct && correct !== '#' && letter.toUpperCase() !== correct) commitCell(r, c, '');
   });
+  updateWordCorrectness(sel.row, sel.col, sel.dir);
 }
 
 function checkAll() {
@@ -638,6 +679,12 @@ function checkAll() {
       if (correct && correct !== '#' && letter.toUpperCase() !== correct) commitCell(r, c, '');
     }
   }
+  for (let r = 0; r < puzzle.height; r++)
+    for (let c = 0; c < puzzle.width; c++)
+      if (!puzzle.cells[r][c].black) {
+        updateWordCorrectness(r, c, 'across');
+        updateWordCorrectness(r, c, 'down');
+      }
 }
 
 // ── Clear ──────────────────────────────────────────────────────────────────
