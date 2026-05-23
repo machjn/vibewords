@@ -11,6 +11,7 @@ let revealedCells = new Set();
 let users = {};        // user_id -> { color, name, cursor }
 let sel = { row: -1, col: -1, dir: 'across' };
 let pencilMode = false;
+let showOthers = true;
 
 // ── Identity persistence ───────────────────────────────────────────────────
 
@@ -124,6 +125,7 @@ function handleMessage(msg) {
         cursor: { row: msg.row, col: msg.col, direction: msg.direction },
       });
       showUserSelection(msg.user_id, msg.color, msg.row, msg.col, msg.direction);
+      updateOtherPlayersClues();
       updatePlayerList();
       break;
     }
@@ -136,6 +138,7 @@ function handleMessage(msg) {
     case 'user_left':
       clearUserSelection(msg.user_id);
       delete users[msg.user_id];
+      updateOtherPlayersClues();
       updatePlayerList();
       break;
 
@@ -259,6 +262,7 @@ function hexToRgba(hex, alpha) {
 function showUserSelection(userId, color, row, col, dir) {
   clearUserSelection(userId);
   if (!userId || row == null || row < 0) return;
+  if (userId !== myUserId && !showOthers) return;
 
   wordCells(row, col, dir).forEach(([r, c]) => {
     const cellEl = getCell(r, c);
@@ -362,6 +366,7 @@ function selectCell(r, c, dir) {
   if (inp) { inp.focus(); inp.select(); }
 
   updateActiveClue(r, c, dir);
+  updateOtherPlayersClues();
   updateActionButtons();
   send({ type: 'cursor_move', row: r, col: c, direction: dir });
 }
@@ -533,6 +538,28 @@ function jumpToClue(number, dir) {
 
 // ── Clue panel ─────────────────────────────────────────────────────────────
 
+function updateOtherPlayersClues() {
+  document.querySelectorAll('[data-other-highlight]').forEach(el => {
+    el.style.background = '';
+    el.style.borderLeftColor = '';
+    el.removeAttribute('data-other-highlight');
+  });
+
+  if (!showOthers) return;
+
+  for (const [userId, user] of Object.entries(users)) {
+    if (!user.cursor) continue;
+    const { row, col, direction } = user.cursor;
+    const num = wordStartNumber(row, col, direction);
+    if (num == null) continue;
+    const clueEl = document.getElementById(`clue-${direction[0]}-${num}`);
+    if (!clueEl || clueEl.classList.contains('active')) continue;
+    clueEl.style.background = hexToRgba(user.color, 0.12);
+    clueEl.style.borderLeftColor = hexToRgba(user.color, 0.5);
+    clueEl.setAttribute('data-other-highlight', userId);
+  }
+}
+
 function updateActiveClue(r, c, dir) {
   const num = wordStartNumber(r, c, dir);
   if (num == null) return;
@@ -681,6 +708,22 @@ function togglePencil() {
   btn.textContent = pencilMode ? '✏ Pencil' : 'Pen';
 }
 
+function toggleOthers() {
+  showOthers = !showOthers;
+  const btn = document.getElementById('others-btn');
+  btn.classList.toggle('active', showOthers);
+  btn.textContent = showOthers ? 'Others: On' : 'Others: Off';
+
+  if (!showOthers) {
+    Object.keys(users).forEach(clearUserSelection);
+  } else {
+    Object.entries(users).forEach(([uid, u]) => {
+      if (u.cursor) showUserSelection(uid, u.color, u.cursor.row, u.cursor.col, u.cursor.direction);
+    });
+  }
+  updateOtherPlayersClues();
+}
+
 function togglePencilVisibility() {
   const grid = document.getElementById('crossword-grid');
   const btn  = document.getElementById('show-pencil-btn');
@@ -699,6 +742,7 @@ function escHtml(str)   { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;'
 
 document.getElementById('pencil-btn').addEventListener('click', togglePencil);
 document.getElementById('show-pencil-btn').addEventListener('click', togglePencilVisibility);
+document.getElementById('others-btn').addEventListener('click', toggleOthers);
 document.getElementById('reveal-letter-btn').addEventListener('click', revealLetter);
 document.getElementById('reveal-word-btn').addEventListener('click', revealWord);
 document.getElementById('check-btn').addEventListener('click', checkWord);
