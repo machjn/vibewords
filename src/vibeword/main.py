@@ -304,6 +304,23 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                     exclude=websocket,
                 )
 
+            elif msg_type == "pointer_move":
+                x = float(data.get("x", 0))
+                y = float(data.get("y", 0))
+                logger.debug("[%s] %s pointer (%.3f, %.3f)", room_id, user_id, x, y)
+                await room.broadcast(
+                    {"type": "pointer_move", "user_id": user_id, "color": color,
+                     "name": room.clients[websocket]["name"], "x": x, "y": y},
+                    exclude=websocket,
+                )
+
+            elif msg_type == "pointer_clear":
+                logger.debug("[%s] %s pointer cleared", room_id, user_id)
+                await room.broadcast(
+                    {"type": "pointer_clear", "user_id": user_id},
+                    exclude=websocket,
+                )
+
             elif msg_type == "rename":
                 old_name = room.clients[websocket]["name"]
                 new_name = str(data.get("name", "")).strip()[:20]

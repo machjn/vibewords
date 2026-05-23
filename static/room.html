@@ -179,6 +179,9 @@
     #export-btn { background: #5dade2; border-color: #5dade2; }
     #export-btn:hover { background: #3498db; border-color: #3498db; }
 
+    /* Pass cursor events through inputs while RMB is held so the body cursor shows */
+    body.rmb-active .cell input { pointer-events: none; }
+
     /* Hide pencil marks when toggle is off */
     #crossword-grid.hide-pencil input.pencil { color: transparent; }
 

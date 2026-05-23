@@ -137,6 +137,7 @@ function handleMessage(msg) {
 
     case 'user_left':
       clearUserSelection(msg.user_id);
+      _clearPointer(msg.user_id);
       delete users[msg.user_id];
       updateOtherPlayersClues();
       updatePlayerList();
@@ -145,6 +146,14 @@ function handleMessage(msg) {
     case 'renamed':
       if (users[msg.user_id]) users[msg.user_id].name = msg.name;
       updatePlayerList();
+      break;
+
+    case 'pointer_move':
+      if (showOthers) _movePointer(msg.user_id, msg.color, msg.name, msg.x, msg.y);
+      break;
+
+    case 'pointer_clear':
+      _clearPointer(msg.user_id);
       break;
   }
 }
@@ -725,6 +734,7 @@ function toggleOthers() {
 
   if (!showOthers) {
     Object.keys(users).forEach(clearUserSelection);
+    _clearAllPointers();
   } else {
     Object.entries(users).forEach(([uid, u]) => {
       if (u.cursor) showUserSelection(uid, u.color, u.cursor.row, u.cursor.col, u.cursor.direction);
@@ -767,6 +777,92 @@ document.getElementById('share-btn').addEventListener('click', async () => {
     btn.textContent = 'Copied!';
     setTimeout(() => { btn.textContent = 'Copy link'; }, 2000);
   } catch { prompt('Share this link:', location.href); }
+});
+
+// ── RMB pointer ────────────────────────────────────────────────────────────
+
+const _pointerEls = {};
+let _rmbDown = false;
+let _lastPointerSend = 0;
+const POINTER_THROTTLE = 40;
+
+function _cursorSvg(color) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="20" viewBox="0 0 16 20" style="display:block">
+    <path d="M2 1 L2 15 L5.5 11.5 L8.5 18.5 L10.5 17.5 L7.5 10.5 L12 10.5 Z"
+          fill="${color}" stroke="white" stroke-width="1.5"
+          stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function _getOrCreatePointer(userId, color, name) {
+  if (_pointerEls[userId]) return _pointerEls[userId];
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;pointer-events:none;z-index:1000;display:flex;align-items:flex-start;gap:3px';
+  el.innerHTML = _cursorSvg(color) +
+    `<span style="background:${color};color:white;font-family:inherit;font-size:11px;` +
+    `padding:1px 5px;border-radius:3px;white-space:nowrap;margin-top:3px;` +
+    `box-shadow:0 1px 3px rgba(0,0,0,0.3)">${escHtml(name)}</span>`;
+  document.body.appendChild(el);
+  _pointerEls[userId] = el;
+  return el;
+}
+
+function _movePointer(userId, color, name, x, y) {
+  const grid = document.getElementById('crossword-grid');
+  if (!grid) return;
+  const rect = grid.getBoundingClientRect();
+  const el = _getOrCreatePointer(userId, color, name);
+  el.style.left = (rect.left + x * rect.width)  + 'px';
+  el.style.top  = (rect.top  + y * rect.height) + 'px';
+}
+
+function _clearPointer(userId) {
+  const el = _pointerEls[userId];
+  if (el) { el.remove(); delete _pointerEls[userId]; }
+}
+
+function _clearAllPointers() {
+  Object.keys(_pointerEls).forEach(_clearPointer);
+}
+
+function _sendPointer(e) {
+  const grid = document.getElementById('crossword-grid');
+  if (!grid) return;
+  const rect = grid.getBoundingClientRect();
+  send({
+    type: 'pointer_move',
+    x: (e.clientX - rect.left) / rect.width,
+    y: (e.clientY - rect.top)  / rect.height,
+  });
+  _lastPointerSend = Date.now();
+}
+
+// Attach to the grid-area scroll container
+document.querySelector('.grid-area').addEventListener('contextmenu', e => e.preventDefault());
+
+document.querySelector('.grid-area').addEventListener('mousedown', e => {
+  if (e.button !== 2) return;
+  _rmbDown = true;
+  if (myColor) {
+    const encoded = encodeURIComponent(_cursorSvg(myColor));
+    document.body.style.cursor = `url("data:image/svg+xml,${encoded}") 2 1, crosshair`;
+    document.body.classList.add('rmb-active');
+  }
+  _sendPointer(e);
+});
+
+document.querySelector('.grid-area').addEventListener('mousemove', e => {
+  if (!_rmbDown) return;
+  if (Date.now() - _lastPointerSend < POINTER_THROTTLE) return;
+  _sendPointer(e);
+});
+
+document.addEventListener('mouseup', e => {
+  if (e.button !== 2 || !_rmbDown) return;
+  _rmbDown = false;
+  document.body.style.cursor = '';
+  document.body.classList.remove('rmb-active');
+  send({ type: 'pointer_clear' });
 });
 
 // ── Stream mode toggle ─────────────────────────────────────────────────────
