@@ -35,7 +35,6 @@ from vibeword.scrapers import Scraper
 BLOCK = "#"
 EMPTY = "0"
 
-_SERIES_URL = "https://www.theguardian.com/crosswords/series/cryptic.json"
 _GUARDIAN_BASE = "https://www.theguardian.com"
 
 
@@ -97,20 +96,18 @@ def fetch_crossword_data(page_url: str) -> dict[str, Any]:
     return envelope["crossword"]
 
 
-def _fetch_series_listing() -> str:
-    """Return the HTML blob from the Guardian cryptic series listing endpoint."""
-    req = Request(
-        _SERIES_URL,
-        headers={"User-Agent": "vibeword/0.1 (+personal use)", "Accept": "application/json"},
-    )
+def _fetch_series_listing(crossword_type: str = "cryptic") -> str:
+    """Return the HTML blob from the Guardian series listing endpoint for the given type."""
+    url = f"{_GUARDIAN_BASE}/crosswords/series/{crossword_type}.json"
+    req = Request(url, headers={"User-Agent": "vibeword/0.1 (+personal use)", "Accept": "application/json"})
     try:
         with urlopen(req, timeout=30) as resp:
             return json.loads(resp.read()).get("html", "")
     except Exception as exc:
-        raise ScraperError(f"Could not fetch Guardian series listing: {exc}") from exc
+        raise ScraperError(f"Could not fetch Guardian {crossword_type} series listing: {exc}") from exc
 
 
-def _parse_series_listing(html_content: str) -> dict[date, int]:
+def _parse_series_listing(html_content: str, crossword_type: str = "cryptic") -> dict[date, int]:
     """Extract a {puzzle_date: puzzle_number} map from the series listing HTML.
 
     The listing HTML embeds ISO datetime attributes next to crossword URLs, e.g.:
@@ -122,11 +119,12 @@ def _parse_series_listing(html_content: str) -> dict[date, int]:
     We add one day to align with the date stored in the puzzle's JSON.
     """
     pairs: dict[date, int] = {}
-    for m in re.finditer(
-        r'datetime="(\d{4}-\d{2}-\d{2})T[^"]*".*?/crosswords/cryptic/(\d+)',
-        html_content,
-        re.DOTALL,
-    ):
+    pattern = (
+        r'datetime="(\d{4}-\d{2}-\d{2})T[^"]*".*?/crosswords/'
+        + re.escape(crossword_type)
+        + r'/(\d+)'
+    )
+    for m in re.finditer(pattern, html_content, re.DOTALL):
         # +1 day: listing timestamp is the publication night, puzzle date is next day
         d = date.fromisoformat(m.group(1)) + timedelta(days=1)
         num = int(m.group(2))
@@ -135,34 +133,35 @@ def _parse_series_listing(html_content: str) -> dict[date, int]:
     return pairs
 
 
-def _puzzle_number_for_date(target: date) -> int:
+def _puzzle_number_for_date(
+    target: date, crossword_type: str = "cryptic", weekly_rate: float = 6
+) -> int:
     """Return the crossword number for a given date.
 
     Strategy:
     1. Check the series listing (covers the most recent ~3–4 weeks).
     2. For older dates, estimate the number from the known publication
-       rate (~6 per week, Mon–Sat) anchored to the latest known puzzle,
-       then walk at most ±14 numbers to find an exact match.
+       rate (weekly_rate) anchored to the latest known puzzle, then walk
+       at most ±14 numbers to find an exact match.
     """
-    html_content = _fetch_series_listing()
-    listing = _parse_series_listing(html_content)
+    html_content = _fetch_series_listing(crossword_type)
+    listing = _parse_series_listing(html_content, crossword_type)
 
     if target in listing:
         return listing[target]
 
     # Anchor on the most recent known puzzle from the listing.
     if not listing:
-        raise ScraperError("Guardian series listing returned no puzzle data")
+        raise ScraperError(f"Guardian {crossword_type} series listing returned no puzzle data")
     latest_date, latest_num = max(listing.items(), key=lambda kv: kv[0])
 
-    # Guardian cryptic is published Mon–Sat (6 days/week, ~313/year).
     days_delta = (target - latest_date).days
-    estimated_num = latest_num + round(days_delta * 6 / 7)
+    estimated_num = latest_num + round(days_delta * weekly_rate / 7)
 
-    # Search outward from the estimate, up to ±14 puzzles (~2 weeks).
+    # Search outward from the estimate, up to ±14 puzzles (~2 weeks at 1/week).
     def _puzzle_date(num: int) -> date | None:
         try:
-            data = fetch_crossword_data(f"{_GUARDIAN_BASE}/crosswords/cryptic/{num}")
+            data = fetch_crossword_data(f"{_GUARDIAN_BASE}/crosswords/{crossword_type}/{num}")
         except ScraperError:
             return None
         raw = data.get("date")
@@ -178,9 +177,8 @@ def _puzzle_number_for_date(target: date) -> int:
                 return candidate
 
     raise ScraperError(
-        f"Could not find a Guardian cryptic crossword published on {target}. "
-        "It may be a Sunday, a public holiday, or before the online archive. "
-        "Use fetch_by_number() to fetch by puzzle number instead."
+        f"Could not find a Guardian {crossword_type} crossword published on {target}. "
+        "It may be a publication holiday or before the online archive."
     )
 
 
@@ -373,47 +371,57 @@ def fetch_and_convert(url: str, include_solutions: bool = True) -> dict[str, Any
 
 
 class GuardianScraper(Scraper):
-    """Scraper for Guardian cryptic crosswords.
+    """Scraper for Guardian crosswords.
 
-    Implements the common `Scraper` interface; also exposes `fetch_by_url`
-    and `fetch_by_number` for direct access to specific puzzles.
+    Pass crossword_type to target a specific series (cryptic, quiptic, concise, …)
+    and weekly_rate to tune date-based puzzle-number estimation.  Defaults to the
+    cryptic crossword (Mon–Sat, ~6/week).
+
+    Also exposes `fetch_by_url` and `fetch_by_number` for direct access.
     """
+
+    def __init__(self, crossword_type: str = "cryptic", weekly_rate: float = 6):
+        self._crossword_type = crossword_type
+        self._weekly_rate = weekly_rate
 
     @property
     def name(self) -> str:
-        return "Guardian Cryptic"
+        return f"Guardian {self._crossword_type.title()}"
 
     def fetch_today(self) -> dict[str, Any]:
-        """Fetch the most recently published Guardian cryptic crossword.
+        """Fetch the most recently published puzzle for this series.
 
         Uses the series listing directly rather than date lookup, since the
         latest puzzle may not yet be indexed under today's calendar date.
         """
-        html_content = _fetch_series_listing()
-        m = re.search(r"/crosswords/cryptic/(\d+)", html_content)
+        html_content = _fetch_series_listing(self._crossword_type)
+        m = re.search(rf"/crosswords/{re.escape(self._crossword_type)}/(\d+)", html_content)
         if not m:
-            raise ScraperError("Could not find a crossword number in the Guardian series listing")
+            raise ScraperError(
+                f"Could not find a crossword number in the Guardian {self._crossword_type} series listing"
+            )
         return self.fetch_by_number(int(m.group(1)))
 
     def fetch_for_date(self, puzzle_date: date) -> dict[str, Any]:
-        """Fetch the Guardian cryptic crossword for a specific date.
+        """Fetch the puzzle for a specific date.
 
         For recent dates (within ~3–4 weeks) the puzzle number is read directly
         from the series listing.  For older dates the number is estimated from the
-        known ~6-per-week publication rate and confirmed with at most a handful of
-        additional fetches.  Raises ScraperError if no puzzle can be found
-        (e.g. the date is a Sunday or before the online archive).
+        weekly_rate and confirmed with at most ±14 additional fetches.
+        Raises ScraperError if no puzzle can be found for that date.
         """
-        number = _puzzle_number_for_date(puzzle_date)
+        number = _puzzle_number_for_date(puzzle_date, self._crossword_type, self._weekly_rate)
         return self.fetch_by_number(number)
 
     def fetch_by_url(self, url: str, include_solutions: bool = True) -> dict[str, Any]:
         """Fetch a crossword by URL, type/number path, or bare number string."""
-        return fetch_and_convert(normalise_url(url), include_solutions=include_solutions)
+        return fetch_and_convert(
+            normalise_url(url, self._crossword_type), include_solutions=include_solutions
+        )
 
-    def fetch_by_number(self, number: int, crossword_type: str = "cryptic") -> dict[str, Any]:
+    def fetch_by_number(self, number: int) -> dict[str, Any]:
         """Fetch a crossword by its puzzle number, e.g. fetch_by_number(30012)."""
-        url = f"{_GUARDIAN_BASE}/crosswords/{crossword_type}/{number}"
+        url = f"{_GUARDIAN_BASE}/crosswords/{self._crossword_type}/{number}"
         return fetch_and_convert(url)
 
     def default_output_name(self, ipuz: dict[str, Any]) -> str:

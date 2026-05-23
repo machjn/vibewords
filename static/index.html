@@ -171,8 +171,12 @@
       <div class="section-label">
         <span>By date</span>
       </div>
+      <div class="input-row" style="margin-bottom:0.5rem">
+        <select id="source-select" style="flex:1"></select>
+        <select id="type-select" style="flex:1"></select>
+      </div>
+      <p id="schedule-hint" class="section-hint" style="margin-bottom:0.4rem;min-height:1em"></p>
       <div class="input-row">
-        <select class="select-scraper" id="date-scraper"></select>
         <input class="text-input input-date" type="date" id="date-input">
         <button class="btn" id="date-btn">Go</button>
       </div>
@@ -214,30 +218,51 @@
     // ── Scraper metadata ──────────────────────────────────────────────────
 
     let scrapers = [];
+    let sources  = {};  // { source_id: { name, types: [scraper, …] } }
 
     async function loadScrapers() {
       const res = await fetch('/api/scrapers');
       scrapers = await res.json();
 
-      const sel = document.getElementById('date-scraper');
-      sel.innerHTML = scrapers.map(s =>
-        `<option value="${s.id}">${s.name}</option>`
+      sources = {};
+      for (const s of scrapers) {
+        if (!sources[s.source]) sources[s.source] = { name: s.source_name, types: [] };
+        sources[s.source].types.push(s);
+      }
+
+      const sourceSel = document.getElementById('source-select');
+      sourceSel.innerHTML = Object.entries(sources).map(([id, src]) =>
+        `<option value="${id}">${src.name}</option>`
       ).join('');
 
+      updateTypeDropdown();
+    }
+
+    function updateTypeDropdown() {
+      const sourceId = document.getElementById('source-select').value;
+      const typeSel  = document.getElementById('type-select');
+      typeSel.innerHTML = (sources[sourceId]?.types || []).map(s =>
+        `<option value="${s.id}">${s.name}</option>`
+      ).join('');
+      updateScheduleHint();
       updateUrlSection();
     }
 
+    function updateScheduleHint() {
+      const scraper = selectedDateScraper();
+      document.getElementById('schedule-hint').textContent =
+        scraper?.schedule ? `Publishes ${scraper.schedule}` : '';
+    }
+
     function selectedDateScraper() {
-      const id = document.getElementById('date-scraper').value;
+      const id = document.getElementById('type-select').value;
       return scrapers.find(s => s.id === id) || null;
     }
 
     function updateUrlSection() {
-      const scraper = selectedDateScraper();
+      const urlCapable = scrapers.filter(s => s.supports_url);
       const section = document.getElementById('url-section');
       const hint    = document.getElementById('url-hint');
-
-      const urlCapable = scrapers.filter(s => s.supports_url);
 
       if (urlCapable.length === 0) {
         section.classList.add('dimmed');
@@ -246,10 +271,12 @@
       }
 
       section.classList.remove('dimmed');
-      hint.textContent = '(' + urlCapable.map(s => s.name).join(', ') + ')';
+      const sourceNames = [...new Set(urlCapable.map(s => s.source_name))];
+      hint.textContent = '(' + sourceNames.join(', ') + ')';
     }
 
-    document.getElementById('date-scraper').addEventListener('change', updateUrlSection);
+    document.getElementById('source-select').addEventListener('change', updateTypeDropdown);
+    document.getElementById('type-select').addEventListener('change', updateScheduleHint);
 
     // ── By date ───────────────────────────────────────────────────────────
 
@@ -257,11 +284,13 @@
     const dateBtn    = document.getElementById('date-btn');
     const dateStatus = document.getElementById('date-status');
 
-    // Default to today
-    dateInput.value = new Date().toISOString().split('T')[0];
+    // Default to today; cap max at today since future puzzles aren't published yet
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+    dateInput.max   = today;
 
     async function createFromDate() {
-      const scraper = document.getElementById('date-scraper').value;
+      const scraper = document.getElementById('type-select').value;
       const d = dateInput.value;
       if (!scraper || !d) return;
 
@@ -361,6 +390,15 @@
     // ── Boot ──────────────────────────────────────────────────────────────
 
     loadScrapers();
+
+    // Reset loading state if browser restores page from bfcache (back button).
+    window.addEventListener('pageshow', e => {
+      if (!e.persisted) return;
+      dateBtn.disabled = false;
+      urlBtn.disabled  = false;
+      setStatus(dateStatus, '', '');
+      setStatus(urlStatus,  '', '');
+    });
   </script>
 </body>
 </html>

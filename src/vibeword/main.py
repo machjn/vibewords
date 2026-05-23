@@ -21,15 +21,25 @@ from vibeword.scrapers.independent import ScraperError as _IndependentScraperErr
 ScraperError = (_GuardianScraperError, _IndependentScraperError)
 
 _SCRAPERS = {
-    "guardian": {
-        "instance": GuardianScraper(),
-        "name": "Guardian Cryptic",
-        "supports_url": True,
+    "guardian_cryptic": {
+        "instance": GuardianScraper("cryptic", weekly_rate=6),
+        "source": "guardian", "source_name": "Guardian",
+        "name": "Cryptic", "supports_url": True, "schedule": "Mon–Sat",
     },
-    "independent": {
+    "guardian_quiptic": {
+        "instance": GuardianScraper("quiptic", weekly_rate=1),
+        "source": "guardian", "source_name": "Guardian",
+        "name": "Quiptic", "supports_url": True, "schedule": "Sundays",
+    },
+    "guardian_quick": {
+        "instance": GuardianScraper("quick", weekly_rate=6),
+        "source": "guardian", "source_name": "Guardian",
+        "name": "Quick", "supports_url": True, "schedule": "Mon–Sat",
+    },
+    "independent_cryptic": {
         "instance": IndependentScraper(),
-        "name": "Independent Cryptic",
-        "supports_url": False,
+        "source": "independent", "source_name": "Independent",
+        "name": "Cryptic", "supports_url": False, "schedule": "Daily",
     },
 }
 
@@ -169,7 +179,12 @@ async def create_room(file: UploadFile = File(...)):
 @app.get("/api/scrapers")
 def list_scrapers():
     return [
-        {"id": k, "name": v["name"], "supports_url": v["supports_url"]}
+        {
+            "id": k,
+            "source": v["source"], "source_name": v["source_name"],
+            "name": v["name"], "supports_url": v["supports_url"],
+            "schedule": v["schedule"],
+        }
         for k, v in _SCRAPERS.items()
     ]
 

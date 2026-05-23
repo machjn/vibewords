@@ -20,6 +20,7 @@ Minor:
 - test proper error handling in case of malformed ipuz file etc.
 - assess exposure to injection attacks?
 - add some tests for scrapers etc.
+- the landing page could be clearer i.e. 'create a room' section. Browse rooms should be at the top.
 
 Major:
 - Add other scrapers
