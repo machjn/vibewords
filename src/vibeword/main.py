@@ -1,5 +1,8 @@
+import logging
+import os
 import time
 import uuid
+from contextlib import asynccontextmanager
 from typing import Dict, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
@@ -10,7 +13,24 @@ from pydantic import BaseModel
 from vibeword.ipuz_parser import Puzzle, parse_ipuz
 from vibeword.scrapers.guardian import ScraperError, fetch_crossword_data, convert, normalise_url
 
-app = FastAPI()
+_log_level_name = os.getenv("LOG_LEVEL", "INFO").upper()
+_log_level = getattr(logging, _log_level_name, logging.INFO)
+
+logger = logging.getLogger("vibeword")
+logger.propagate = False
+logger.setLevel(_log_level)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Borrow uvicorn's handler so our messages use the same format as uvicorn's own logs.
+    for handler in logging.getLogger("uvicorn").handlers:
+        logger.addHandler(handler)
+    logger.info("VibeWord starting | log_level=%s", _log_level_name)
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c", "#e67e22", "#e91e63"]
 ROOM_TTL = 60 * 60 * 6  # 6 hours
@@ -83,19 +103,28 @@ def prune_rooms():
     stale = [rid for rid, room in rooms.items() if now - room.last_activity > ROOM_TTL]
     for rid in stale:
         del rooms[rid]
+    if stale:
+        logger.info("Pruned %d stale room(s) | active=%d", len(stale), len(rooms))
 
 
-def _make_room(puzzle: Puzzle) -> str:
+def _make_room(puzzle: Puzzle, source: str = "upload") -> str:
     if not puzzle.cells:
         raise HTTPException(status_code=400, detail="Puzzle has no grid data")
     room_id = uuid.uuid4().hex[:8]
     room = Room(puzzle)
+    saved_count = 0
     if puzzle.saved:
         for r, row in enumerate(puzzle.saved):
             for c, letter in enumerate(row):
                 if letter:
                     room.grid[f"{r},{c}"] = letter
+                    saved_count += 1
     rooms[room_id] = room
+    logger.info(
+        "Room %s created | source=%s | title=%r | size=%dx%d | saved_cells=%d",
+        room_id, source, puzzle.title or "Untitled",
+        puzzle.width, puzzle.height, saved_count,
+    )
     return room_id
 
 
@@ -108,8 +137,9 @@ async def create_room(file: UploadFile = File(...)):
     try:
         puzzle = parse_ipuz(content)
     except Exception as e:
+        logger.warning("Failed to parse uploaded file %r: %s", file.filename, e)
         raise HTTPException(status_code=400, detail=f"Could not parse ipuz file: {e}")
-    return {"room_id": _make_room(puzzle)}
+    return {"room_id": _make_room(puzzle, source=f"file:{file.filename}")}
 
 
 # ── Room creation: URL ─────────────────────────────────────────────────────
@@ -126,12 +156,15 @@ def create_room_from_url(body: RoomFromUrl):
     except ScraperError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    logger.info("Fetching crossword from %s", url)
     try:
         data = fetch_crossword_data(url)
         ipuz_data = convert(data, origin=url, include_solutions=True)
     except ScraperError as e:
+        logger.warning("Scrape failed for %s: %s", url, e)
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
+        logger.error("Unexpected error fetching %s: %s", url, e)
         raise HTTPException(status_code=502, detail=f"Failed to fetch crossword: {e}")
 
     try:
@@ -139,7 +172,7 @@ def create_room_from_url(body: RoomFromUrl):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not parse fetched puzzle: {e}")
 
-    return {"room_id": _make_room(puzzle)}
+    return {"room_id": _make_room(puzzle, source="guardian")}
 
 
 # ── Room page ──────────────────────────────────────────────────────────────
@@ -166,6 +199,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
     color = room.next_color()
     name = room.next_player_name()
     room.clients[websocket] = {"user_id": user_id, "color": color, "name": name, "cursor": None}
+
+    logger.info("[%s] %s (%s) joined | players=%d", room_id, name, user_id, len(room.clients))
 
     await websocket.send_json({
         "type": "sync",
@@ -200,17 +235,21 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                         room.pencil_grid[key] = value
                         room.grid.pop(key, None)
                         room.revealed.discard(key)
+                        logger.debug("[%s] %s cell (%d,%d) = %r (pencil)", room_id, user_id, row, col, value)
                     else:
                         room.grid[key] = value
                         room.pencil_grid.pop(key, None)
                         if revealed:
                             room.revealed.add(key)
+                            logger.debug("[%s] %s cell (%d,%d) = %r (revealed)", room_id, user_id, row, col, value)
                         else:
                             room.revealed.discard(key)
+                            logger.debug("[%s] %s cell (%d,%d) = %r", room_id, user_id, row, col, value)
                 else:
                     room.grid.pop(key, None)
                     room.pencil_grid.pop(key, None)
                     room.revealed.discard(key)
+                    logger.debug("[%s] %s cell (%d,%d) cleared", room_id, user_id, row, col)
                 await room.broadcast(
                     {"type": "cell_update", "row": row, "col": col, "value": value,
                      "pencil": pencil, "revealed": revealed, "user_id": user_id},
@@ -221,6 +260,10 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 cursor = {"row": data.get("row"), "col": data.get("col"),
                           "direction": data.get("direction", "across")}
                 room.clients[websocket]["cursor"] = cursor
+                logger.debug(
+                    "[%s] %s cursor (%s,%s) %s",
+                    room_id, user_id, cursor["row"], cursor["col"], cursor["direction"],
+                )
                 await room.broadcast(
                     {"type": "cursor_move", "user_id": user_id, "color": color,
                      "name": room.clients[websocket]["name"], **cursor},
@@ -228,9 +271,11 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 )
 
             elif msg_type == "rename":
+                old_name = room.clients[websocket]["name"]
                 new_name = str(data.get("name", "")).strip()[:20]
                 if new_name:
                     room.clients[websocket]["name"] = new_name
+                    logger.info("[%s] %s renamed: %r → %r", room_id, user_id, old_name, new_name)
                     await room.broadcast(
                         {"type": "renamed", "user_id": user_id, "name": new_name},
                         exclude=websocket,
@@ -239,7 +284,9 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
     except WebSocketDisconnect:
         pass
     finally:
+        name = room.clients.get(websocket, {}).get("name", user_id)
         room.clients.pop(websocket, None)
+        logger.info("[%s] %s (%s) disconnected | players=%d", room_id, name, user_id, len(room.clients))
         await room.broadcast({"type": "user_left", "user_id": user_id})
 
 
