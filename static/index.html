@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeWord</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    .logo {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: #1a1a1a;
+    }
+
+    .logo span { color: #3498db; }
+
+    .tagline {
+      color: #666;
+      font-size: 1rem;
+      margin-top: -1.5rem;
+    }
+
+    .card {
+      width: 400px;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    /* ── URL section ── */
+    .url-section {
+      padding: 1.5rem 1.75rem 1.25rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    .url-section label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #888;
+      margin-bottom: 0.6rem;
+    }
+
+    .url-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .url-input {
+      flex: 1;
+      padding: 0.5rem 0.7rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      color: #1a1a1a;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .url-input:focus { border-color: #3498db; }
+    .url-input::placeholder { color: #bbb; }
+
+    /* ── File section ── */
+    .file-section {
+      padding: 1.25rem 1.75rem 1.5rem;
+    }
+
+    .file-section label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #888;
+      margin-bottom: 0.6rem;
+    }
+
+    .upload-zone {
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      padding: 1.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: #3498db;
+      background: #f0f8ff;
+    }
+
+    .upload-icon { font-size: 1.75rem; margin-bottom: 0.4rem; }
+
+    .upload-zone p {
+      color: #666;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .upload-zone strong { color: #1a1a1a; }
+    .upload-zone input[type="file"] { display: none; }
+
+    /* ── Shared ── */
+    .btn {
+      padding: 0.5rem 1rem;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #2980b9; }
+    .btn:disabled { background: #aaa; cursor: not-allowed; }
+
+    .status {
+      font-size: 0.85rem;
+      margin-top: 0.65rem;
+      min-height: 1.2em;
+    }
+    .status.error  { color: #e74c3c; }
+    .status.loading { color: #3498db; }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="logo">Vibe<span>Word</span></div>
+    <p class="tagline">Collaborative crosswords, in real time</p>
+  </div>
+
+  <div class="card">
+    <div class="url-section">
+      <label>Guardian crossword URL</label>
+      <div class="url-row">
+        <input class="url-input" type="url" id="url-input"
+               placeholder="https://www.theguardian.com/crosswords/…">
+        <button class="btn" id="url-btn">Go</button>
+      </div>
+      <p class="status" id="url-status"></p>
+    </div>
+
+    <div class="file-section">
+      <label>Upload .ipuz file</label>
+      <div class="upload-zone" id="drop-zone">
+        <div class="upload-icon">&#9635;</div>
+        <p><strong>Drop an .ipuz file here</strong><br>or click to choose one</p>
+        <input type="file" id="file-input" accept=".ipuz,application/json">
+      </div>
+      <p class="status" id="file-status"></p>
+    </div>
+  </div>
+
+  <script>
+    // ── URL path ──────────────────────────────────────────────────────────
+
+    const urlInput  = document.getElementById('url-input');
+    const urlBtn    = document.getElementById('url-btn');
+    const urlStatus = document.getElementById('url-status');
+
+    async function createFromUrl() {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      setStatus(urlStatus, 'loading', 'Fetching crossword…');
+      urlBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/rooms/url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to create room');
+        location.href = `/room/${data.room_id}`;
+      } catch (err) {
+        setStatus(urlStatus, 'error', err.message);
+        urlBtn.disabled = false;
+      }
+    }
+
+    urlBtn.addEventListener('click', createFromUrl);
+    urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') createFromUrl(); });
+
+    // ── File upload path ──────────────────────────────────────────────────
+
+    const zone       = document.getElementById('drop-zone');
+    const fileInput  = document.getElementById('file-input');
+    const fileStatus = document.getElementById('file-status');
+
+    zone.addEventListener('click', () => fileInput.click());
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) upload(fileInput.files[0]); });
+
+    async function upload(file) {
+      setStatus(fileStatus, 'loading', 'Creating room…');
+
+      const form = new FormData();
+      form.append('file', file);
+
+      try {
+        const res = await fetch('/api/rooms', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Upload failed');
+        location.href = `/room/${data.room_id}`;
+      } catch (err) {
+        setStatus(fileStatus, 'error', err.message);
+      }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    function setStatus(el, type, msg) {
+      el.className = `status ${type}`;
+      el.textContent = msg;
+    }
+  </script>
+</body>
+</html>

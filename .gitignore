@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+
+# Puzzle files (downloaded/generated, not source)
+*.ipuz
+
+# IDE
+.vscode/
+.idea/

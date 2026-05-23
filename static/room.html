@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeWord</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 0 1.25rem;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+
+    .logo { font-weight: 800; font-size: 1.1rem; color: #3498db; letter-spacing: -0.5px; }
+
+    #puzzle-title {
+      font-weight: 600;
+      color: #1a1a1a;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ccc;
+      flex-shrink: 0;
+    }
+    #status-dot.connected { background: #2ecc71; }
+    #status-dot.disconnected { background: #e74c3c; }
+
+    /* ── Player chips ── */
+    #players-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+      max-width: 360px;
+      overflow: hidden;
+    }
+
+    .player-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      white-space: nowrap;
+      overflow: hidden;
+      max-width: 130px;
+    }
+
+    .my-chip { border-style: solid; }
+
+    .player-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .player-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #444;
+    }
+
+    #my-name-el {
+      color: #1a1a1a;
+      font-weight: 600;
+      outline: none;
+      min-width: 2ch;
+      max-width: 110px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: text;
+    }
+
+    #my-name-el:focus {
+      border-bottom: 1px solid #3498db;
+    }
+
+    .share-btn {
+      padding: 0.3rem 0.8rem;
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .share-btn:hover { background: #e0e0e0; }
+
+    /* ── Active clue banner ── */
+    #clue-banner {
+      background: #1a1a1a;
+      color: white;
+      padding: 0.4rem 1.25rem;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    #active-clue { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .action-btn {
+      padding: 0.25rem 0.65rem;
+      background: rgba(255,255,255,0.12);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .action-btn:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
+    .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .action-btn.active { background: #e67e22; border-color: #e67e22; }
+
+    /* Pencil and revealed letter styles */
+    .cell input.pencil {
+      color: #7f8c8d;
+      font-style: italic;
+      font-weight: 400;
+    }
+    .cell input.revealed { color: #2471a3; }
+
+    /* ── Main layout ── */
+    .main {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ── Grid area ── */
+    .grid-area {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;  /* scroll container only — no centering here */
+    }
+
+    /* Inner wrapper handles centering without breaking scroll */
+    .grid-centering {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100%;
+      padding: 1.5rem;
+    }
+
+    #crossword-grid {
+      display: grid;
+      gap: 1px;
+      border: 2px solid #1a1a1a;
+      background: #1a1a1a;
+      flex-shrink: 0;
+    }
+
+    .cell {
+      width: 38px;
+      height: 38px;
+      position: relative;
+      background: white;
+    }
+
+    .cell.black { background: #1a1a1a; }
+
+    .cell-number {
+      position: absolute;
+      top: 1px;
+      left: 2px;
+      font-size: 9px;
+      font-weight: 600;
+      color: #333;
+      line-height: 1;
+      pointer-events: none;
+      z-index: 2;
+      user-select: none;
+    }
+
+    .cell input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-transform: uppercase;
+      cursor: pointer;
+      caret-color: transparent;
+      outline: none;
+      padding: 0;
+      font-family: inherit;
+      z-index: 1;
+    }
+
+    /* Per-player selection overlays (word = light, cursor cell = dark) */
+    .sel-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Clue panel ── */
+    .clue-panel {
+      width: clamp(240px, 28vw, 450px);
+      flex-shrink: 0;
+      background: white;
+      border-left: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+    }
+
+    /* Drag handle on the left edge of the panel */
+    .clue-resize-handle {
+      width: 5px;
+      flex-shrink: 0;
+      cursor: col-resize;
+      background: transparent;
+      position: relative;
+      transition: background 0.15s;
+    }
+    .clue-resize-handle:hover,
+    .clue-resize-handle.dragging { background: rgba(52,152,219,0.12); }
+    .clue-resize-handle::after {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1px;
+      height: 28px;
+      background: #d0d0d0;
+      border-radius: 1px;
+    }
+    .clue-resize-handle:hover::after,
+    .clue-resize-handle.dragging::after { background: #3498db; }
+
+    /* The scrollable content area inside the panel */
+    .clue-panel-inner {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+
+    .clue-sections-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .clue-section {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 0.75rem 0;
+    }
+
+    .clue-section + .clue-section {
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .clue-section h3 {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #888;
+      padding: 0 0.75rem 0.4rem;
+    }
+
+    /* ── Stream mode ── */
+    .clue-sections-wrap.stream-mode {
+      flex-direction: row;
+    }
+
+    .clue-sections-wrap.stream-mode .clue-section + .clue-section {
+      border-top: none;
+      border-left: 1px solid #e0e0e0;
+    }
+
+    .clue-sections-wrap.stream-mode .clue-section h3 {
+      position: sticky;
+      top: 0;
+      background: white;
+      z-index: 1;
+      padding-top: 0.3rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .clue-sections-wrap.stream-mode .clue-item {
+      font-size: 0.72rem;
+      padding: 0.18rem 0.5rem;
+      line-height: 1.3;
+    }
+
+    .clue-section ul { list-style: none; }
+
+    .clue-item {
+      padding: 0.3rem 0.75rem;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      cursor: pointer;
+      color: #333;
+      border-left: 3px solid transparent;
+      transition: background 0.1s;
+    }
+
+    .clue-item:hover { background: #f5f5f0; }
+
+    /* background + border-color applied via JS using the player's colour */
+    .clue-item.active { font-weight: 600; }
+
+    .clue-num { font-weight: 700; margin-right: 0.25rem; }
+
+    /* ── Disconnected overlay ── */
+    #disconnected-banner {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #disconnected-banner.show { display: flex; }
+    #disconnected-banner div {
+      background: white;
+      border-radius: 10px;
+      padding: 2rem;
+      text-align: center;
+    }
+    #disconnected-banner h2 { margin-bottom: 0.5rem; }
+    #disconnected-banner p { color: #666; margin-bottom: 1rem; }
+    #disconnected-banner button {
+      padding: 0.5rem 1.25rem;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">VibeWord</div>
+    <div id="puzzle-title">Loading...</div>
+    <div id="players-bar"></div>
+    <div id="status-dot"></div>
+    <button class="share-btn" id="share-btn">Copy link</button>
+  </header>
+
+  <div id="clue-banner">
+    <span id="active-clue">Select a cell to begin</span>
+    <button class="action-btn" id="pencil-btn" title="Toggle pencil mode (tentative answers)">&#9999; Pencil</button>
+    <button class="action-btn" id="reveal-letter-btn" disabled title="Reveal the letter in the selected cell">Reveal Letter</button>
+    <button class="action-btn" id="reveal-word-btn" disabled title="Reveal all letters in the selected word">Reveal Word</button>
+    <button class="action-btn" id="check-btn" disabled title="Remove wrong letters in the selected word">Check</button>
+    <button class="action-btn" id="check-all-btn" disabled title="Remove all wrong letters in the grid">Check All</button>
+    <button class="action-btn" id="clear-btn" disabled title="Clear non-crossing letters in the selected word">Clear</button>
+    <button class="action-btn" id="clue-mode-btn" title="Toggle clue layout">Clues: Rows</button>
+  </div>
+
+  <div class="main">
+    <div class="grid-area">
+      <div class="grid-centering">
+        <div id="crossword-grid"></div>
+      </div>
+    </div>
+
+    <div class="clue-panel" id="clue-panel">
+      <div class="clue-resize-handle" id="clue-resize-handle"></div>
+      <div class="clue-panel-inner">
+        <div class="clue-sections-wrap" id="clue-sections-wrap">
+          <div class="clue-section">
+            <h3>Across</h3>
+            <ul id="across-clues"></ul>
+          </div>
+          <div class="clue-section">
+            <h3>Down</h3>
+            <ul id="down-clues"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="disconnected-banner">
+    <div>
+      <h2>Disconnected</h2>
+      <p>Lost connection to the server.</p>
+      <button onclick="location.reload()">Reconnect</button>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
