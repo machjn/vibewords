@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rooms — VibeWord</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 0 1.5rem;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+
+    .logo { font-weight: 800; font-size: 1.1rem; color: #3498db; letter-spacing: -0.5px; text-decoration: none; }
+
+    .header-title { font-weight: 600; color: #1a1a1a; flex: 1; }
+
+    .nav-link {
+      font-size: 0.85rem;
+      color: #3498db;
+      text-decoration: none;
+    }
+    .nav-link:hover { text-decoration: underline; }
+
+    main {
+      flex: 1;
+      padding: 2rem 1.5rem;
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    h1 { font-size: 1.3rem; font-weight: 700; color: #1a1a1a; }
+
+    .refresh-info { font-size: 0.8rem; color: #aaa; }
+
+    /* ── Table ── */
+    .rooms-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+
+    .rooms-table th {
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #888;
+      padding: 0.65rem 1rem;
+      background: #fafafa;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    .rooms-table td {
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+      color: #333;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: middle;
+    }
+
+    .rooms-table tr:last-child td { border-bottom: none; }
+
+    .rooms-table tbody tr:hover td { background: #fafafa; }
+
+    .puzzle-title { font-weight: 600; color: #1a1a1a; }
+    .puzzle-author { font-size: 0.78rem; color: #999; margin-top: 1px; }
+
+    .size-badge {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      background: #f0f0f0;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    .players-cell { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+
+    .player-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.15rem 0.45rem;
+      background: #f5f5f5;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      color: #444;
+    }
+
+    .player-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .no-players { color: #bbb; font-style: italic; font-size: 0.82rem; }
+
+    .age { color: #999; font-size: 0.82rem; white-space: nowrap; }
+
+    .join-btn {
+      padding: 0.3rem 0.8rem;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .join-btn:hover { background: #2980b9; }
+
+    /* ── Empty state ── */
+    .empty {
+      background: white;
+      border-radius: 10px;
+      padding: 3rem 2rem;
+      text-align: center;
+      color: #999;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+
+    .empty p { margin-bottom: 1rem; }
+
+    .create-link {
+      display: inline-block;
+      padding: 0.5rem 1.2rem;
+      background: #3498db;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: background 0.15s;
+    }
+    .create-link:hover { background: #2980b9; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="logo" href="/">VibeWord</a>
+    <span class="header-title">Active Rooms</span>
+    <a class="nav-link" href="/">+ New room</a>
+  </header>
+
+  <main>
+    <div class="page-header">
+      <h1>Rooms</h1>
+      <span class="refresh-info" id="refresh-info"></span>
+    </div>
+    <div id="content"></div>
+  </main>
+
+  <script>
+    const REFRESH_INTERVAL = 10_000;
+    let lastFetch = null;
+
+    function relativeTime(epochSeconds) {
+      const diff = Math.floor(Date.now() / 1000 - epochSeconds);
+      if (diff < 60)  return 'just now';
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      return `${Math.floor(diff / 3600)}h ago`;
+    }
+
+    function renderRooms(rooms) {
+      const el = document.getElementById('content');
+
+      if (!rooms.length) {
+        el.innerHTML = `
+          <div class="empty">
+            <p>No active rooms yet.</p>
+            <a class="create-link" href="/">Create one</a>
+          </div>`;
+        return;
+      }
+
+      const rows = rooms.map(r => {
+        const players = r.players.length
+          ? r.players.map(p =>
+              `<span class="player-chip">
+                <span class="player-dot" style="background:${p.color}"></span>
+                ${esc(p.name)}
+              </span>`).join('')
+          : '<span class="no-players">Empty</span>';
+
+        return `
+          <tr>
+            <td>
+              <div class="puzzle-title">${esc(r.title)}</div>
+              ${r.author ? `<div class="puzzle-author">by ${esc(r.author)}</div>` : ''}
+            </td>
+            <td><span class="size-badge">${r.width}&times;${r.height}</span></td>
+            <td><div class="players-cell">${players}</div></td>
+            <td class="age">${relativeTime(r.last_activity)}</td>
+            <td><a class="join-btn" href="/room/${r.room_id}">Join</a></td>
+          </tr>`;
+      }).join('');
+
+      el.innerHTML = `
+        <table class="rooms-table">
+          <thead>
+            <tr>
+              <th>Puzzle</th>
+              <th>Size</th>
+              <th>Players</th>
+              <th>Last active</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    function updateRefreshInfo() {
+      if (!lastFetch) return;
+      const ago = Math.round((Date.now() - lastFetch) / 1000);
+      document.getElementById('refresh-info').textContent =
+        `Updated ${ago === 0 ? 'just now' : ago + 's ago'} · refreshes every ${REFRESH_INTERVAL / 1000}s`;
+    }
+
+    async function load() {
+      try {
+        const res = await fetch('/api/rooms');
+        const data = await res.json();
+        renderRooms(data);
+        lastFetch = Date.now();
+        updateRefreshInfo();
+      } catch (e) {
+        document.getElementById('content').textContent = 'Failed to load rooms.';
+      }
+    }
+
+    function esc(str) {
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    load();
+    setInterval(load, REFRESH_INTERVAL);
+    setInterval(updateRefreshInfo, 5_000);
+  </script>
+</body>
+</html>

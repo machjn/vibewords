@@ -28,7 +28,8 @@
       flex-shrink: 0;
     }
 
-    .logo { font-weight: 800; font-size: 1.1rem; color: #3498db; letter-spacing: -0.5px; }
+    .logo { font-weight: 800; font-size: 1.1rem; color: #3498db; letter-spacing: -0.5px; text-decoration: none; }
+    .logo:hover { text-decoration: underline; }
 
     #puzzle-title {
       font-weight: 600;
@@ -102,6 +103,15 @@
       border-bottom: 1px solid #3498db;
     }
 
+    .rooms-link {
+      font-size: 0.8rem;
+      color: #888;
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .rooms-link:hover { color: #3498db; }
+
     .share-btn {
       padding: 0.3rem 0.8rem;
       background: #f0f0f0;
@@ -144,10 +154,19 @@
     .action-btn:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
     .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
     .action-btn.active { background: #e67e22; border-color: #e67e22; }
+    #pencil-btn { background: #2c3e50; border-color: #2c3e50; }
+    #pencil-btn:hover:not(:disabled) { background: #1a252f; border-color: #1a252f; }
+    #pencil-btn.active { background: #7f8c8d; border-color: #7f8c8d; }
+    #pencil-btn.active:hover { background: #6c7a7d; border-color: #6c7a7d; }
+    #show-pencil-btn.active { background: #2ecc71; border-color: #2ecc71; }
+    #show-pencil-btn.active:hover { background: #27ae60; border-color: #27ae60; }
     #clue-mode-btn { background: #e67e22; border-color: #e67e22; }
     #clue-mode-btn:hover { background: #d35400; border-color: #d35400; }
     #export-btn { background: #5dade2; border-color: #5dade2; }
     #export-btn:hover { background: #3498db; border-color: #3498db; }
+
+    /* Hide pencil marks when toggle is off */
+    #crossword-grid.hide-pencil input.pencil { color: transparent; }
 
     /* Pencil and revealed letter styles */
     .cell input.pencil {
@@ -390,16 +409,18 @@
 </head>
 <body>
   <header>
-    <div class="logo">VibeWord</div>
+    <a class="logo" href="/">VibeWord</a>
     <div id="puzzle-title">Loading...</div>
     <div id="players-bar"></div>
     <div id="status-dot"></div>
+    <a class="rooms-link" href="/rooms">All rooms</a>
     <button class="share-btn" id="share-btn">Copy link</button>
   </header>
 
   <div id="clue-banner">
     <span id="active-clue">Select a cell to begin</span>
-    <button class="action-btn" id="pencil-btn" title="Toggle pencil mode (tentative answers)">&#9999; Pencil</button>
+    <button class="action-btn" id="pencil-btn" title="Toggle between pen and pencil mode">Pen</button>
+    <button class="action-btn active" id="show-pencil-btn" title="Show or hide pencil marks">Marks: On</button>
     <button class="action-btn" id="reveal-letter-btn" disabled title="Reveal the letter in the selected cell">Reveal Letter</button>
     <button class="action-btn" id="reveal-word-btn" disabled title="Reveal all letters in the selected word">Reveal Word</button>
     <button class="action-btn" id="check-btn" disabled title="Remove wrong letters in the selected word">Check</button>

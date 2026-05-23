@@ -175,6 +175,33 @@ def create_room_from_url(body: RoomFromUrl):
     return {"room_id": _make_room(puzzle, source="guardian")}
 
 
+# ── Room list ──────────────────────────────────────────────────────────────
+
+@app.get("/api/rooms")
+async def list_rooms():
+    prune_rooms()
+    return [
+        {
+            "room_id": room_id,
+            "title": room.puzzle.title or "Untitled",
+            "author": room.puzzle.author or "",
+            "width": room.puzzle.width,
+            "height": room.puzzle.height,
+            "players": [
+                {"name": info["name"], "color": info["color"]}
+                for info in room.clients.values()
+            ],
+            "last_activity": room.last_activity,
+        }
+        for room_id, room in rooms.items()
+    ]
+
+
+@app.get("/rooms")
+async def rooms_page():
+    return FileResponse("static/rooms.html")
+
+
 # ── Room page ──────────────────────────────────────────────────────────────
 
 @app.get("/room/{room_id}")

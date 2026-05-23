@@ -657,7 +657,17 @@ function exportIpuz() {
 
 function togglePencil() {
   pencilMode = !pencilMode;
-  document.getElementById('pencil-btn').classList.toggle('active', pencilMode);
+  const btn = document.getElementById('pencil-btn');
+  btn.classList.toggle('active', pencilMode);
+  btn.textContent = pencilMode ? '✏ Pencil' : 'Pen';
+}
+
+function togglePencilVisibility() {
+  const grid = document.getElementById('crossword-grid');
+  const btn  = document.getElementById('show-pencil-btn');
+  const hidden = grid.classList.toggle('hide-pencil');
+  btn.classList.toggle('active', !hidden);
+  btn.textContent = hidden ? 'Marks: Off' : 'Marks: On';
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -669,6 +679,7 @@ function escHtml(str)   { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;'
 // ── Button wiring ──────────────────────────────────────────────────────────
 
 document.getElementById('pencil-btn').addEventListener('click', togglePencil);
+document.getElementById('show-pencil-btn').addEventListener('click', togglePencilVisibility);
 document.getElementById('reveal-letter-btn').addEventListener('click', revealLetter);
 document.getElementById('reveal-word-btn').addEventListener('click', revealWord);
 document.getElementById('check-btn').addEventListener('click', checkWord);

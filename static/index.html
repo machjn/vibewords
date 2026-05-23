@@ -30,7 +30,12 @@
     .tagline {
       color: #666;
       font-size: 1rem;
-      margin-top: -1.5rem;
+      margin-top: 0.25rem;
+    }
+
+    .col {
+      width: 400px;
+      text-align: center;
     }
 
     .card {
@@ -143,7 +148,7 @@
   </style>
 </head>
 <body>
-  <div>
+  <div class="col">
     <div class="logo">Vibe<span>Word</span></div>
     <p class="tagline">Collaborative crosswords, in real time</p>
   </div>
@@ -168,6 +173,10 @@
       </div>
       <p class="status" id="file-status"></p>
     </div>
+  </div>
+
+  <div class="col" style="text-align:right;margin-top:-1rem">
+    <a href="/rooms" style="color:#3498db;font-size:0.85rem;text-decoration:none">View active rooms →</a>
   </div>
 
   <script>
