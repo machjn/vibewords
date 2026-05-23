@@ -1,7 +1,23 @@
 """Guardian crossword scraper and IPUZ converter (library module).
 
 Import and call `fetch_and_convert(url)` for the common case, or use the
-lower-level helpers individually.
+lower-level helpers individually.  For the common `Scraper` interface use
+the `GuardianScraper` class at the bottom of this module.
+
+Data source
+-----------
+The Guardian serves crossword data as JSON at:
+  https://www.theguardian.com/crosswords/<type>/<number>.json
+
+This is the same as the public crossword page URL with `.json` appended.
+The JSON envelope has a `"crossword"` key containing the grid and clues.
+
+To look up a puzzle by date, the series listing page
+  https://www.theguardian.com/crosswords/series/cryptic.json
+returns HTML embedded in a JSON wrapper.  Each article card embeds an ISO
+datetime attribute adjacent to its crossword URL, giving a {date: number}
+map for the most recent ~3–4 weeks.  For older dates the number is estimated
+from the ~6-per-week publication rate and confirmed with a short linear search.
 """
 from __future__ import annotations
 
@@ -9,13 +25,18 @@ import html
 import json
 import re
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 from urllib.request import Request, urlopen
+
+from vibeword.scrapers import Scraper
 
 
 BLOCK = "#"
 EMPTY = "0"
+
+_SERIES_URL = "https://www.theguardian.com/crosswords/series/cryptic.json"
+_GUARDIAN_BASE = "https://www.theguardian.com"
 
 
 class ScraperError(Exception):
@@ -74,6 +95,93 @@ def fetch_crossword_data(page_url: str) -> dict[str, Any]:
             f"Top-level keys: {list(envelope.keys())}"
         )
     return envelope["crossword"]
+
+
+def _fetch_series_listing() -> str:
+    """Return the HTML blob from the Guardian cryptic series listing endpoint."""
+    req = Request(
+        _SERIES_URL,
+        headers={"User-Agent": "vibeword/0.1 (+personal use)", "Accept": "application/json"},
+    )
+    try:
+        with urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read()).get("html", "")
+    except Exception as exc:
+        raise ScraperError(f"Could not fetch Guardian series listing: {exc}") from exc
+
+
+def _parse_series_listing(html_content: str) -> dict[date, int]:
+    """Extract a {puzzle_date: puzzle_number} map from the series listing HTML.
+
+    The listing HTML embeds ISO datetime attributes next to crossword URLs, e.g.:
+      datetime="2026-05-21T23:00:42+0000" ... /crosswords/cryptic/30013
+
+    The Guardian publishes each puzzle at ~23:00 UTC (midnight BST) the evening
+    before it is dated.  The datetime attribute therefore reflects the night of
+    publication, which is one calendar day before the puzzle's own date label.
+    We add one day to align with the date stored in the puzzle's JSON.
+    """
+    pairs: dict[date, int] = {}
+    for m in re.finditer(
+        r'datetime="(\d{4}-\d{2}-\d{2})T[^"]*".*?/crosswords/cryptic/(\d+)',
+        html_content,
+        re.DOTALL,
+    ):
+        # +1 day: listing timestamp is the publication night, puzzle date is next day
+        d = date.fromisoformat(m.group(1)) + timedelta(days=1)
+        num = int(m.group(2))
+        # Keep only the first match per date; cards can contain multiple links.
+        pairs.setdefault(d, num)
+    return pairs
+
+
+def _puzzle_number_for_date(target: date) -> int:
+    """Return the crossword number for a given date.
+
+    Strategy:
+    1. Check the series listing (covers the most recent ~3–4 weeks).
+    2. For older dates, estimate the number from the known publication
+       rate (~6 per week, Mon–Sat) anchored to the latest known puzzle,
+       then walk at most ±14 numbers to find an exact match.
+    """
+    html_content = _fetch_series_listing()
+    listing = _parse_series_listing(html_content)
+
+    if target in listing:
+        return listing[target]
+
+    # Anchor on the most recent known puzzle from the listing.
+    if not listing:
+        raise ScraperError("Guardian series listing returned no puzzle data")
+    latest_date, latest_num = max(listing.items(), key=lambda kv: kv[0])
+
+    # Guardian cryptic is published Mon–Sat (6 days/week, ~313/year).
+    days_delta = (target - latest_date).days
+    estimated_num = latest_num + round(days_delta * 6 / 7)
+
+    # Search outward from the estimate, up to ±14 puzzles (~2 weeks).
+    def _puzzle_date(num: int) -> date | None:
+        try:
+            data = fetch_crossword_data(f"{_GUARDIAN_BASE}/crosswords/cryptic/{num}")
+        except ScraperError:
+            return None
+        raw = data.get("date")
+        if isinstance(raw, (int, float)):
+            from datetime import datetime, timezone
+            return datetime.fromtimestamp(raw / 1000, tz=timezone.utc).date()
+        return date.fromisoformat(str(raw)) if raw else None
+
+    for delta in range(0, 15):
+        for sign in (1, -1) if delta else (0,):
+            candidate = estimated_num + delta * sign
+            if _puzzle_date(candidate) == target:
+                return candidate
+
+    raise ScraperError(
+        f"Could not find a Guardian cryptic crossword published on {target}. "
+        "It may be a Sunday, a public holiday, or before the online archive. "
+        "Use fetch_by_number() to fetch by puzzle number instead."
+    )
 
 
 def clean_clue_text(clue: str) -> str:
@@ -262,3 +370,56 @@ def fetch_and_convert(url: str, include_solutions: bool = True) -> dict[str, Any
     """Convenience: fetch a Guardian URL and return an IPUZ dict."""
     data = fetch_crossword_data(url)
     return convert(data, origin=url, include_solutions=include_solutions)
+
+
+class GuardianScraper(Scraper):
+    """Scraper for Guardian cryptic crosswords.
+
+    Implements the common `Scraper` interface; also exposes `fetch_by_url`
+    and `fetch_by_number` for direct access to specific puzzles.
+    """
+
+    @property
+    def name(self) -> str:
+        return "Guardian Cryptic"
+
+    def fetch_today(self) -> dict[str, Any]:
+        """Fetch the most recently published Guardian cryptic crossword.
+
+        Uses the series listing directly rather than date lookup, since the
+        latest puzzle may not yet be indexed under today's calendar date.
+        """
+        html_content = _fetch_series_listing()
+        m = re.search(r"/crosswords/cryptic/(\d+)", html_content)
+        if not m:
+            raise ScraperError("Could not find a crossword number in the Guardian series listing")
+        return self.fetch_by_number(int(m.group(1)))
+
+    def fetch_for_date(self, puzzle_date: date) -> dict[str, Any]:
+        """Fetch the Guardian cryptic crossword for a specific date.
+
+        For recent dates (within ~3–4 weeks) the puzzle number is read directly
+        from the series listing.  For older dates the number is estimated from the
+        known ~6-per-week publication rate and confirmed with at most a handful of
+        additional fetches.  Raises ScraperError if no puzzle can be found
+        (e.g. the date is a Sunday or before the online archive).
+        """
+        number = _puzzle_number_for_date(puzzle_date)
+        return self.fetch_by_number(number)
+
+    def fetch_by_url(self, url: str, include_solutions: bool = True) -> dict[str, Any]:
+        """Fetch a crossword by URL, type/number path, or bare number string."""
+        return fetch_and_convert(normalise_url(url), include_solutions=include_solutions)
+
+    def fetch_by_number(self, number: int, crossword_type: str = "cryptic") -> dict[str, Any]:
+        """Fetch a crossword by its puzzle number, e.g. fetch_by_number(30012)."""
+        url = f"{_GUARDIAN_BASE}/crosswords/{crossword_type}/{number}"
+        return fetch_and_convert(url)
+
+    def default_output_name(self, ipuz: dict[str, Any]) -> str:
+        # Extract type and number from the origin URL, e.g. .../crosswords/cryptic/30012
+        origin = ipuz.get("origin", "")
+        m = re.search(r"/crosswords/([a-z-]+)/(\d+)", origin)
+        if m:
+            return f"guardian_{m.group(1)}_{m.group(2)}.ipuz"
+        return super().default_output_name(ipuz)

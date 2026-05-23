@@ -4,6 +4,7 @@ import re
 import time
 import uuid
 from contextlib import asynccontextmanager
+from datetime import date
 from typing import Dict, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
@@ -12,7 +13,25 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from vibeword.ipuz_parser import Puzzle, parse_ipuz
-from vibeword.scrapers.guardian import ScraperError, fetch_crossword_data, convert, normalise_url
+from vibeword.scrapers.guardian import GuardianScraper
+from vibeword.scrapers.guardian import ScraperError as _GuardianScraperError
+from vibeword.scrapers.independent import IndependentScraper
+from vibeword.scrapers.independent import ScraperError as _IndependentScraperError
+
+ScraperError = (_GuardianScraperError, _IndependentScraperError)
+
+_SCRAPERS = {
+    "guardian": {
+        "instance": GuardianScraper(),
+        "name": "Guardian Cryptic",
+        "supports_url": True,
+    },
+    "independent": {
+        "instance": IndependentScraper(),
+        "name": "Independent Cryptic",
+        "supports_url": False,
+    },
+}
 
 _log_level_name = os.getenv("LOG_LEVEL", "INFO").upper()
 _log_level = getattr(logging, _log_level_name, logging.INFO)
@@ -145,29 +164,44 @@ async def create_room(file: UploadFile = File(...)):
     return {"room_id": _make_room(puzzle, source=f"file:{file.filename}")}
 
 
-# ── Room creation: URL ─────────────────────────────────────────────────────
+# ── Scrapers metadata ──────────────────────────────────────────────────────
 
-class RoomFromUrl(BaseModel):
-    url: str
+@app.get("/api/scrapers")
+def list_scrapers():
+    return [
+        {"id": k, "name": v["name"], "supports_url": v["supports_url"]}
+        for k, v in _SCRAPERS.items()
+    ]
 
 
-@app.post("/api/rooms/url")
-def create_room_from_url(body: RoomFromUrl):
+# ── Room creation: by date ─────────────────────────────────────────────────
+
+class RoomFromDate(BaseModel):
+    scraper: str
+    date: str  # ISO format YYYY-MM-DD
+
+
+@app.post("/api/rooms/date")
+def create_room_from_date(body: RoomFromDate):
     prune_rooms()
-    try:
-        url = normalise_url(body.url)
-    except ScraperError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    entry = _SCRAPERS.get(body.scraper)
+    if entry is None:
+        raise HTTPException(status_code=400, detail=f"Unknown scraper: {body.scraper!r}")
 
-    logger.info("Fetching crossword from %s", url)
     try:
-        data = fetch_crossword_data(url)
-        ipuz_data = convert(data, origin=url, include_solutions=True)
+        puzzle_date = date.fromisoformat(body.date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid date: {body.date!r}")
+
+    scraper = entry["instance"]
+    logger.info("Fetching %s crossword for %s", entry["name"], puzzle_date)
+    try:
+        ipuz_data = scraper.fetch_for_date(puzzle_date)
     except ScraperError as e:
-        logger.warning("Scrape failed for %s: %s", url, e)
+        logger.warning("Scrape failed (%s, %s): %s", body.scraper, puzzle_date, e)
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
-        logger.error("Unexpected error fetching %s: %s", url, e)
+        logger.error("Unexpected error (%s, %s): %s", body.scraper, puzzle_date, e)
         raise HTTPException(status_code=502, detail=f"Failed to fetch crossword: {e}")
 
     try:
@@ -175,7 +209,42 @@ def create_room_from_url(body: RoomFromUrl):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not parse fetched puzzle: {e}")
 
-    return {"room_id": _make_room(puzzle, source="guardian")}
+    return {"room_id": _make_room(puzzle, source=body.scraper)}
+
+
+# ── Room creation: by URL ──────────────────────────────────────────────────
+
+class RoomFromUrl(BaseModel):
+    scraper: str
+    url: str
+
+
+@app.post("/api/rooms/url")
+def create_room_from_url(body: RoomFromUrl):
+    prune_rooms()
+    entry = _SCRAPERS.get(body.scraper)
+    if entry is None:
+        raise HTTPException(status_code=400, detail=f"Unknown scraper: {body.scraper!r}")
+    if not entry["supports_url"]:
+        raise HTTPException(status_code=400, detail=f"{entry['name']} does not support URL-based fetching")
+
+    scraper = entry["instance"]
+    logger.info("Fetching crossword from %s via %s", body.url, entry["name"])
+    try:
+        ipuz_data = scraper.fetch_by_url(body.url)
+    except ScraperError as e:
+        logger.warning("Scrape failed for %s: %s", body.url, e)
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        logger.error("Unexpected error fetching %s: %s", body.url, e)
+        raise HTTPException(status_code=502, detail=f"Failed to fetch crossword: {e}")
+
+    try:
+        puzzle = parse_ipuz(ipuz_data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not parse fetched puzzle: {e}")
+
+    return {"room_id": _make_room(puzzle, source=body.scraper)}
 
 
 # ── Room list ──────────────────────────────────────────────────────────────

@@ -13,13 +13,7 @@ import json
 import sys
 from pathlib import Path
 
-from vibeword.scrapers.guardian import (
-    ScraperError,
-    convert,
-    default_output_name,
-    fetch_crossword_data,
-    normalise_url,
-)
+from vibeword.scrapers.guardian import GuardianScraper, ScraperError
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -30,16 +24,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-solutions", action="store_true", help="Write an unsolved IPUZ without the solution grid")
     args = parser.parse_args(argv)
 
-    include_solutions = not args.no_solutions
+    scraper = GuardianScraper()
     try:
-        url = normalise_url(args.puzzle, args.type)
-        data = fetch_crossword_data(url)
-        ipuz = convert(data, origin=url, include_solutions=include_solutions)
+        ipuz = scraper.fetch_by_url(args.puzzle, include_solutions=not args.no_solutions)
     except ScraperError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
-    output = Path(args.output or default_output_name(data, include_solutions))
+    output = Path(args.output or scraper.default_output_name(ipuz))
     output.write_text(json.dumps(ipuz, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(output)
     return 0

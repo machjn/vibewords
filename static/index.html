@@ -34,42 +34,57 @@
     }
 
     .col {
-      width: 400px;
+      width: 420px;
       text-align: center;
     }
 
     .card {
-      width: 400px;
+      width: 420px;
       background: white;
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
-    /* ── URL section ── */
-    .url-section {
-      padding: 1.5rem 1.75rem 1.25rem;
+    /* ── Sections ── */
+    .section {
+      padding: 1.25rem 1.75rem;
       border-bottom: 1px solid #eee;
     }
 
-    .url-section label {
-      display: block;
+    .section:last-child { border-bottom: none; }
+
+    .section-label {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .section-label span {
       font-size: 0.78rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: #888;
-      margin-bottom: 0.6rem;
     }
 
-    .url-row {
+    .section-hint {
+      font-size: 0.72rem;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: #bbb;
+    }
+
+    /* ── Input row ── */
+    .input-row {
       display: flex;
       gap: 0.5rem;
     }
 
-    .url-input {
-      flex: 1;
-      padding: 0.5rem 0.7rem;
+    select, .text-input {
+      padding: 0.5rem 0.6rem;
       border: 1px solid #ddd;
       border-radius: 6px;
       font-size: 0.9rem;
@@ -77,29 +92,21 @@
       color: #1a1a1a;
       outline: none;
       transition: border-color 0.15s;
-    }
-    .url-input:focus { border-color: #3498db; }
-    .url-input::placeholder { color: #bbb; }
-
-    /* ── File section ── */
-    .file-section {
-      padding: 1.25rem 1.75rem 1.5rem;
+      background: white;
     }
 
-    .file-section label {
-      display: block;
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #888;
-      margin-bottom: 0.6rem;
-    }
+    select:focus, .text-input:focus { border-color: #3498db; }
+    .text-input::placeholder { color: #bbb; }
 
+    .select-scraper { flex: 0 0 auto; min-width: 0; }
+    .input-date     { flex: 1; min-width: 0; }
+    .input-url      { flex: 1; min-width: 0; }
+
+    /* ── File upload ── */
     .upload-zone {
       border: 2px dashed #ddd;
       border-radius: 8px;
-      padding: 1.5rem 1rem;
+      padding: 1.25rem 1rem;
       text-align: center;
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
@@ -110,11 +117,11 @@
       background: #f0f8ff;
     }
 
-    .upload-icon { font-size: 1.75rem; margin-bottom: 0.4rem; }
+    .upload-icon { font-size: 1.5rem; margin-bottom: 0.35rem; }
 
     .upload-zone p {
       color: #666;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       line-height: 1.5;
     }
 
@@ -134,17 +141,21 @@
       cursor: pointer;
       white-space: nowrap;
       transition: background 0.15s;
+      flex-shrink: 0;
     }
     .btn:hover { background: #2980b9; }
     .btn:disabled { background: #aaa; cursor: not-allowed; }
 
     .status {
-      font-size: 0.85rem;
-      margin-top: 0.65rem;
-      min-height: 1.2em;
+      font-size: 0.82rem;
+      margin-top: 0.55rem;
+      min-height: 1.1em;
     }
-    .status.error  { color: #e74c3c; }
+    .status.error   { color: #e74c3c; }
     .status.loading { color: #3498db; }
+
+    /* URL section dims when no URL-capable scraper is selected */
+    .section.dimmed { opacity: 0.4; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -154,18 +165,37 @@
   </div>
 
   <div class="card">
-    <div class="url-section">
-      <label>Guardian crossword URL</label>
-      <div class="url-row">
-        <input class="url-input" type="url" id="url-input"
-               placeholder="https://www.theguardian.com/crosswords/…">
+
+    <!-- ── By date ── -->
+    <div class="section">
+      <div class="section-label">
+        <span>By date</span>
+      </div>
+      <div class="input-row">
+        <select class="select-scraper" id="date-scraper"></select>
+        <input class="text-input input-date" type="date" id="date-input">
+        <button class="btn" id="date-btn">Go</button>
+      </div>
+      <p class="status" id="date-status"></p>
+    </div>
+
+    <!-- ── By URL ── -->
+    <div class="section" id="url-section">
+      <div class="section-label">
+        <span>By URL</span>
+        <span class="section-hint" id="url-hint"></span>
+      </div>
+      <div class="input-row">
+        <input class="text-input input-url" type="text" id="url-input"
+               placeholder="https://www.theguardian.com/crosswords/… or 30013">
         <button class="btn" id="url-btn">Go</button>
       </div>
       <p class="status" id="url-status"></p>
     </div>
 
-    <div class="file-section">
-      <label>Upload .ipuz file</label>
+    <!-- ── File upload ── -->
+    <div class="section">
+      <div class="section-label"><span>Upload .ipuz</span></div>
       <div class="upload-zone" id="drop-zone">
         <div class="upload-icon">&#9635;</div>
         <p><strong>Drop an .ipuz file here</strong><br>or click to choose one</p>
@@ -173,6 +203,7 @@
       </div>
       <p class="status" id="file-status"></p>
     </div>
+
   </div>
 
   <div class="col" style="text-align:right;margin-top:-1rem">
@@ -180,7 +211,82 @@
   </div>
 
   <script>
-    // ── URL path ──────────────────────────────────────────────────────────
+    // ── Scraper metadata ──────────────────────────────────────────────────
+
+    let scrapers = [];
+
+    async function loadScrapers() {
+      const res = await fetch('/api/scrapers');
+      scrapers = await res.json();
+
+      const sel = document.getElementById('date-scraper');
+      sel.innerHTML = scrapers.map(s =>
+        `<option value="${s.id}">${s.name}</option>`
+      ).join('');
+
+      updateUrlSection();
+    }
+
+    function selectedDateScraper() {
+      const id = document.getElementById('date-scraper').value;
+      return scrapers.find(s => s.id === id) || null;
+    }
+
+    function updateUrlSection() {
+      const scraper = selectedDateScraper();
+      const section = document.getElementById('url-section');
+      const hint    = document.getElementById('url-hint');
+
+      const urlCapable = scrapers.filter(s => s.supports_url);
+
+      if (urlCapable.length === 0) {
+        section.classList.add('dimmed');
+        hint.textContent = '';
+        return;
+      }
+
+      section.classList.remove('dimmed');
+      hint.textContent = '(' + urlCapable.map(s => s.name).join(', ') + ')';
+    }
+
+    document.getElementById('date-scraper').addEventListener('change', updateUrlSection);
+
+    // ── By date ───────────────────────────────────────────────────────────
+
+    const dateInput  = document.getElementById('date-input');
+    const dateBtn    = document.getElementById('date-btn');
+    const dateStatus = document.getElementById('date-status');
+
+    // Default to today
+    dateInput.value = new Date().toISOString().split('T')[0];
+
+    async function createFromDate() {
+      const scraper = document.getElementById('date-scraper').value;
+      const d = dateInput.value;
+      if (!scraper || !d) return;
+
+      setStatus(dateStatus, 'loading', 'Fetching crossword…');
+      dateBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/rooms/date', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scraper, date: d }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to create room');
+        location.href = `/room/${data.room_id}`;
+      } catch (err) {
+        setStatus(dateStatus, 'error', err.message);
+        dateBtn.disabled = false;
+      }
+    }
+
+    dateBtn.addEventListener('click', createFromDate);
+    dateInput.addEventListener('keydown', e => { if (e.key === 'Enter') createFromDate(); });
+
+    // ── By URL ────────────────────────────────────────────────────────────
 
     const urlInput  = document.getElementById('url-input');
     const urlBtn    = document.getElementById('url-btn');
@@ -189,6 +295,11 @@
     async function createFromUrl() {
       const url = urlInput.value.trim();
       if (!url) return;
+
+      // Find the first URL-capable scraper
+      const scraper = scrapers.find(s => s.supports_url);
+      if (!scraper) return;
+
       setStatus(urlStatus, 'loading', 'Fetching crossword…');
       urlBtn.disabled = true;
 
@@ -196,7 +307,7 @@
         const res = await fetch('/api/rooms/url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url }),
+          body: JSON.stringify({ scraper: scraper.id, url }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Failed to create room');
@@ -210,14 +321,14 @@
     urlBtn.addEventListener('click', createFromUrl);
     urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') createFromUrl(); });
 
-    // ── File upload path ──────────────────────────────────────────────────
+    // ── File upload ───────────────────────────────────────────────────────
 
     const zone       = document.getElementById('drop-zone');
     const fileInput  = document.getElementById('file-input');
     const fileStatus = document.getElementById('file-status');
 
     zone.addEventListener('click', () => fileInput.click());
-    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
     zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
     zone.addEventListener('drop', e => {
       e.preventDefault();
@@ -228,10 +339,8 @@
 
     async function upload(file) {
       setStatus(fileStatus, 'loading', 'Creating room…');
-
       const form = new FormData();
       form.append('file', file);
-
       try {
         const res = await fetch('/api/rooms', { method: 'POST', body: form });
         const data = await res.json();
@@ -248,6 +357,10 @@
       el.className = `status ${type}`;
       el.textContent = msg;
     }
+
+    // ── Boot ──────────────────────────────────────────────────────────────
+
+    loadScrapers();
   </script>
 </body>
 </html>
