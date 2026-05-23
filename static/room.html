@@ -136,7 +136,19 @@
       gap: 0.75rem;
     }
 
-    #active-clue { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #clue-display {
+      background: #2a2a2a;
+      color: #ccc;
+      padding: 0.4rem 1.25rem;
+      font-size: 0.88rem;
+      line-height: 1.4;
+      flex-shrink: 0;
+      border-top: 1px solid #3a3a3a;
+      display: none;
+    }
+    #clue-display.visible { display: block; }
+    #clue-btn.active { background: #2ecc71; border-color: #2ecc71; }
+    #clue-btn.active:hover { background: #27ae60; border-color: #27ae60; }
 
     .action-btn {
       padding: 0.25rem 0.65rem;
@@ -420,7 +432,7 @@
   </header>
 
   <div id="clue-banner">
-    <span id="active-clue">Select a cell to begin</span>
+    <button class="action-btn active" id="clue-btn" title="Show or hide the active clue">Clue: On</button>
     <button class="action-btn" id="pencil-btn" title="Toggle between pen and pencil mode">Pen</button>
     <button class="action-btn active" id="show-pencil-btn" title="Show or hide pencil marks">Marks: On</button>
     <button class="action-btn active" id="others-btn" title="Show or hide other players">Others: On</button>
@@ -432,6 +444,8 @@
     <button class="action-btn" id="clue-mode-btn" title="Toggle clue layout">Clues: Rows</button>
     <button class="action-btn" id="export-btn" title="Export current progress as .ipuz">&#11015; Export</button>
   </div>
+
+  <div id="clue-display"></div>
 
   <div class="main">
     <div class="grid-area">

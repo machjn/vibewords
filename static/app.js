@@ -575,7 +575,16 @@ function updateActiveClue(r, c, dir) {
   const clueList = dir === 'across' ? puzzle.clues.across : puzzle.clues.down;
   const clue = clueList.find(cl => cl.number === num);
   const label = dir === 'across' ? 'Across' : 'Down';
-  document.getElementById('active-clue').textContent = clue ? `${num} ${label}: ${clue.text}` : '';
+  document.getElementById('clue-display').textContent = clue ? `${num} ${label}: ${clue.text}` : '';
+}
+
+function toggleClueDisplay() {
+  const bar = document.getElementById('clue-display');
+  const btn = document.getElementById('clue-btn');
+  const visible = bar.classList.toggle('visible');
+  btn.classList.toggle('active', visible);
+  btn.textContent = visible ? 'Clue: On' : 'Clue: Off';
+  localStorage.setItem('vw-clue-bar', visible ? '1' : '');
 }
 
 // ── Reveal ─────────────────────────────────────────────────────────────────
@@ -740,6 +749,7 @@ function escHtml(str)   { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;'
 
 // ── Button wiring ──────────────────────────────────────────────────────────
 
+document.getElementById('clue-btn').addEventListener('click', toggleClueDisplay);
 document.getElementById('pencil-btn').addEventListener('click', togglePencil);
 document.getElementById('show-pencil-btn').addEventListener('click', togglePencilVisibility);
 document.getElementById('others-btn').addEventListener('click', toggleOthers);
@@ -778,6 +788,14 @@ document.getElementById('clue-mode-btn').addEventListener('click', () => {
 });
 
 if (localStorage.getItem('vw-stream')) applyStreamMode(true);
+
+// Clue bar defaults to visible; only hide if user explicitly turned it off
+if (localStorage.getItem('vw-clue-bar') === '') {
+  document.getElementById('clue-btn').classList.remove('active');
+  document.getElementById('clue-btn').textContent = 'Clue: Off';
+} else {
+  document.getElementById('clue-display').classList.add('visible');
+}
 
 // ── Clue panel drag-to-resize ──────────────────────────────────────────────
 
