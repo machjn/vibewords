@@ -55,7 +55,7 @@
 
     h1 { font-size: 1.3rem; font-weight: 700; color: #1a1a1a; }
 
-    .refresh-info { font-size: 0.8rem; color: #aaa; }
+    .refresh-info { display: none; }
 
     /* ── Table ── */
     .rooms-table {
@@ -93,6 +93,7 @@
 
     .puzzle-title { font-weight: 600; color: #1a1a1a; }
     .puzzle-author { font-size: 0.78rem; color: #999; margin-top: 1px; }
+    .puzzle-room-id { font-size: 0.75rem; color: #bbb; margin-top: 2px; font-family: ui-monospace, monospace; }
 
     .size-badge {
       display: inline-block;
@@ -169,6 +170,26 @@
       transition: background 0.15s;
     }
     .create-link:hover { background: #2980b9; }
+
+    /* ── Responsive ── */
+    @media (max-width: 620px) {
+      main { padding: 1rem 0.75rem; }
+
+      /* Hide Size and Last active — show Puzzle, Players, Join */
+      .rooms-table th:nth-child(2),
+      .rooms-table td:nth-child(2),
+      .rooms-table th:nth-child(4),
+      .rooms-table td:nth-child(4) { display: none; }
+
+      .rooms-table td { padding: 0.65rem 0.75rem; }
+      .rooms-table th { padding: 0.5rem 0.75rem; }
+    }
+
+    @media (max-width: 420px) {
+      /* Also hide Players — just Puzzle + Join */
+      .rooms-table th:nth-child(3),
+      .rooms-table td:nth-child(3) { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -223,6 +244,7 @@
             <td>
               <div class="puzzle-title">${esc(r.title)}</div>
               ${r.author ? `<div class="puzzle-author">by ${esc(r.author)}</div>` : ''}
+              <div class="puzzle-room-id">${esc(r.room_id)}</div>
             </td>
             <td><span class="size-badge">${r.width}&times;${r.height}</span></td>
             <td><div class="players-cell">${players}</div></td>

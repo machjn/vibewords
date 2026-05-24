@@ -213,18 +213,19 @@
       background: #1a1a1a;
       color: white;
       padding: 0.4rem 1.25rem;
-      font-size: 0.9rem;
+      font-size: 1rem;
       flex-shrink: 0;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.6rem;
     }
 
     #clue-display {
       background: #2a2a2a;
       color: #ccc;
-      padding: 0.4rem 1.25rem;
-      font-size: 0.88rem;
+      padding: 0.45rem 1.25rem;
+      font-size: 1rem;
       line-height: 1.4;
       flex-shrink: 0;
       border-top: 1px solid #3a3a3a;
@@ -235,12 +236,12 @@
     #clue-btn.active:hover { background: #27ae60; border-color: #27ae60; }
 
     .action-btn {
-      padding: 0.25rem 0.65rem;
+      padding: 0.3rem 0.75rem;
       background: rgba(255,255,255,0.12);
       color: white;
       border: 1px solid rgba(255,255,255,0.25);
       border-radius: 4px;
-      font-size: 0.78rem;
+      font-size: 0.88rem;
       font-family: inherit;
       cursor: pointer;
       white-space: nowrap;
@@ -435,7 +436,7 @@
     }
 
     .clue-section h3 {
-      font-size: 0.7rem;
+      font-size: 0.8rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -464,17 +465,17 @@
     }
 
     .clue-sections-wrap.stream-mode .clue-item {
-      font-size: 0.72rem;
+      font-size: 0.95rem;
       padding: 0.18rem 0.5rem;
-      line-height: 1.3;
+      line-height: 1.4;
     }
 
     .clue-section ul { list-style: none; }
 
     .clue-item {
-      padding: 0.3rem 0.75rem;
-      font-size: 0.82rem;
-      line-height: 1.35;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.95rem;
+      line-height: 1.4;
       cursor: pointer;
       color: #333;
       border-left: 3px solid transparent;
@@ -516,6 +517,114 @@
       font-size: 1rem;
       cursor: pointer;
     }
+
+    /* ── Settings panel ── */
+    #settings-wrap {
+      position: relative;
+      margin-left: auto;
+    }
+    #settings-panel {
+      display: none;
+      flex-direction: column;
+      gap: 0.15rem;
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      min-width: 195px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+      padding: 0.4rem;
+      z-index: 50;
+    }
+    #settings-wrap.open #settings-panel { display: flex; }
+    .settings-item {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      width: 100%;
+      padding: 0.35rem 0.65rem;
+      background: none;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      color: #333;
+      cursor: pointer;
+      text-align: left;
+      white-space: nowrap;
+      transition: background 0.1s;
+    }
+    .settings-item:hover { background: #f5f5f0; }
+    .settings-item::before {
+      content: '';
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border-radius: 3px;
+      border: 1.5px solid #ccc;
+      flex-shrink: 0;
+    }
+    .settings-item.active::before { background: #3498db; border-color: #3498db; }
+
+    /* ── Players dropdown (collapsed state) ── */
+    #players-bar { position: relative; }
+    .players-dropdown {
+      display: none;
+      flex-direction: column;
+      gap: 0.3rem;
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+      padding: 0.4rem 0.5rem;
+      z-index: 50;
+      min-width: 140px;
+    }
+    #players-bar.expanded .players-dropdown { display: flex; }
+    .players-summary { cursor: pointer; }
+
+    /* Stack clue panel below grid on medium-width screens */
+    @media (max-width: 800px) {
+      header { padding: 0 0.75rem; gap: 0.5rem; height: 44px; }
+      #room-chip { max-width: 160px; }
+
+      .main { flex-direction: column; }
+      .clue-panel {
+        width: 100%;
+        height: 36vh;
+        min-height: 160px;
+        border-left: none;
+        border-top: 1px solid #e0e0e0;
+        flex-shrink: 0;
+      }
+      .clue-resize-handle { display: none; }
+      .clue-sections-wrap { flex-direction: row; }
+      .clue-sections-wrap .clue-section + .clue-section {
+        border-top: none;
+        border-left: 1px solid #e0e0e0;
+      }
+      .clue-sections-wrap .clue-section h3 {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 1;
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+        border-bottom: 1px solid #f0f0f0;
+      }
+    }
+
+    /* Collapse clue panel entirely on narrow screens; grid fills the view */
+    @media (max-width: 520px) {
+      .clue-panel { display: none; }
+      /* Top-align the grid so the virtual keyboard doesn't cover it */
+      .grid-centering { justify-content: flex-start; }
+    }
   </style>
 </head>
 <body>
@@ -530,6 +639,7 @@
       <div class="room-chip-panel">
         <div class="room-chip-id">Room <code id="room-id-display"></code></div>
         <button id="share-btn" class="room-chip-action">Copy Room Link</button>
+        <button id="export-btn" class="room-chip-action">&#11015; Export .ipuz</button>
         <a id="source-link" href="/rooms" class="room-chip-link" target="_blank" rel="noopener" style="display:none">Original puzzle</a>
         <a id="solutions-link" class="room-chip-link muted" target="_blank" rel="noopener">Solutions (15²): searching…</a>
         <a href="/rooms" class="room-chip-link">All rooms</a>
@@ -546,14 +656,16 @@
     <button class="action-btn" id="check-all-btn" disabled title="Remove all wrong letters in the grid">Check all</button>
     <button class="action-btn" id="clear-btn" disabled title="Clear non-crossing letters in the selected word">Clear</button>
     <span class="btn-sep"></span>
-    <button class="action-btn active" id="clue-btn" title="Show or hide the active clue">Clue</button>
-    <button class="action-btn active" id="show-pencil-btn" title="Show or hide pencil marks">Marks</button>
-    <button class="action-btn active" id="others-btn" title="Show or hide other players">Others</button>
-    <button class="action-btn" id="clue-mode-btn" title="Toggle clue layout between rows and columns">Columns</button>
-    <span class="btn-sep"></span>
     <button class="action-btn" id="pencil-btn" title="Toggle between pen and pencil mode">Pencil</button>
-    <span class="btn-sep"></span>
-    <button class="action-btn" id="export-btn" title="Export current progress as .ipuz">&#11015; Export</button>
+    <div id="settings-wrap">
+      <button class="action-btn" id="settings-btn" title="Display settings">&#9881;</button>
+      <div id="settings-panel">
+        <button id="clue-btn" class="settings-item active">Show clue bar</button>
+        <button id="show-pencil-btn" class="settings-item active">Show pencil marks</button>
+        <button id="others-btn" class="settings-item active">Show other players</button>
+        <button id="clue-mode-btn" class="settings-item">Column clue layout</button>
+      </div>
+    </div>
   </div>
 
   <div id="clue-display"></div>

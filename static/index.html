@@ -17,6 +17,7 @@
       align-items: center;
       justify-content: center;
       gap: 2rem;
+      padding: 1.5rem 1rem;
     }
 
     .logo {
@@ -35,12 +36,14 @@
     }
 
     .col {
-      width: 420px;
+      width: 100%;
+      max-width: 420px;
       text-align: center;
     }
 
     .card {
-      width: 420px;
+      width: 100%;
+      max-width: 420px;
       background: white;
       border-radius: 12px;
       overflow: hidden;
@@ -50,7 +53,8 @@
     /* ── Rooms button ── */
     .rooms-btn {
       display: block;
-      width: 420px;
+      width: 100%;
+      max-width: 420px;
       padding: 0.7rem 1rem;
       background: #3498db;
       color: white;
@@ -182,6 +186,11 @@
 
     /* URL section dims when no URL-capable scraper is selected */
     .section.dimmed { opacity: 0.4; pointer-events: none; }
+
+    @media (max-width: 360px) {
+      .input-row { flex-wrap: wrap; }
+      .input-row .btn { width: 100%; }
+    }
 
     .github-link {
       position: fixed;

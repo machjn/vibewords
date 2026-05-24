@@ -262,11 +262,13 @@ function fitGridToScreen() {
   const area = document.querySelector('.grid-area');
   if (!area) return;
   const pad = 48; // 1.5rem padding on each side
+  const authorH = document.getElementById('puzzle-author')?.offsetHeight ?? 0;
   const availW = area.clientWidth  - pad;
-  const availH = area.clientHeight - pad;
+  const availH = area.clientHeight - pad - authorH;
 
-  const scale = Math.min(availW / naturalW, availH / naturalH, 1);
-  gridEl.style.zoom = scale < 0.999 ? String(scale) : '';
+  const MAX_SCALE = 1.4; // ~53px cells — comfortable without being oversized
+  const scale = Math.min(availW / naturalW, availH / naturalH, MAX_SCALE);
+  gridEl.style.zoom = Math.abs(scale - 1) > 0.001 ? String(scale) : '';
 }
 
 // ── Cell display ───────────────────────────────────────────────────────────
@@ -390,17 +392,53 @@ function updatePlayerList() {
 
   const bar = document.getElementById('players-bar');
   bar.innerHTML = '';
+  bar.classList.remove('expanded');
 
-  for (const [, user] of Object.entries(users)) {
-    const chip = document.createElement('div');
-    chip.className = 'player-chip';
-    chip.innerHTML =
-      `<span class="player-dot" style="background:${user.color}"></span>` +
-      `<span class="player-name">${escHtml(user.name || '?')}</span>`;
-    bar.appendChild(chip);
+  const others = Object.values(users);
+  const allPlayers = [...others, myUserId ? { color: myColor, name: myName, isMe: true } : null].filter(Boolean);
+  const total = allPlayers.length;
+  const narrow = window.matchMedia('(max-width: 640px)').matches;
+
+  if (narrow || total > 4) {
+    // Summary chip showing colour dots + count
+    const summary = document.createElement('div');
+    summary.className = 'player-chip players-summary';
+    allPlayers.slice(0, 3).forEach(p => {
+      const dot = document.createElement('span');
+      dot.className = 'player-dot';
+      dot.style.background = p.color;
+      summary.appendChild(dot);
+    });
+    const label = document.createElement('span');
+    label.className = 'player-name';
+    label.textContent = `${total} player${total !== 1 ? 's' : ''}`;
+    summary.appendChild(label);
+    summary.addEventListener('click', e => {
+      e.stopPropagation();
+      bar.classList.toggle('expanded');
+    });
+    bar.appendChild(summary);
+
+    // Expanded dropdown listing all players
+    const dropdown = document.createElement('div');
+    dropdown.className = 'players-dropdown';
+    others.forEach(u => {
+      const chip = document.createElement('div');
+      chip.className = 'player-chip';
+      chip.innerHTML = `<span class="player-dot" style="background:${u.color}"></span><span class="player-name">${escHtml(u.name || '?')}</span>`;
+      dropdown.appendChild(chip);
+    });
+    if (myUserId) dropdown.appendChild(makeMyChip());
+    bar.appendChild(dropdown);
+  } else {
+    others.forEach(u => {
+      const chip = document.createElement('div');
+      chip.className = 'player-chip';
+      chip.innerHTML = `<span class="player-dot" style="background:${u.color}"></span><span class="player-name">${escHtml(u.name || '?')}</span>`;
+      bar.appendChild(chip);
+    });
+    if (myUserId) bar.appendChild(makeMyChip());
   }
-
-  if (myUserId) bar.appendChild(makeMyChip());
 }
 
 function makeMyChip() {
@@ -985,7 +1023,10 @@ document.getElementById('reveal-word-btn').addEventListener('click', revealWord)
 document.getElementById('check-btn').addEventListener('click', checkWord);
 document.getElementById('check-all-btn').addEventListener('click', checkAll);
 document.getElementById('clear-btn').addEventListener('click', clearClue);
-document.getElementById('export-btn').addEventListener('click', exportIpuz);
+document.getElementById('export-btn').addEventListener('click', () => {
+  exportIpuz();
+  document.getElementById('room-chip').classList.remove('open');
+});
 
 document.getElementById('share-btn').addEventListener('click', async () => {
   const btn = document.getElementById('share-btn');
@@ -1023,6 +1064,8 @@ document.getElementById('room-chip').addEventListener('click', e => {
 document.addEventListener('click', e => {
   if (!e.target.closest('#room-chip'))
     document.getElementById('room-chip').classList.remove('open');
+  if (!e.target.closest('#players-bar'))
+    document.getElementById('players-bar').classList.remove('expanded');
 });
 
 // ── RMB pointer ────────────────────────────────────────────────────────────
@@ -1173,6 +1216,22 @@ let _fitTimer;
 window.addEventListener('resize', () => {
   clearTimeout(_fitTimer);
   _fitTimer = setTimeout(fitGridToScreen, 150);
+});
+
+// Re-fit when layout breakpoints are crossed
+window.matchMedia('(max-width: 800px)').addEventListener('change', fitGridToScreen);
+window.matchMedia('(max-width: 520px)').addEventListener('change', fitGridToScreen);
+
+// ── Settings panel ─────────────────────────────────────────────────────────
+
+document.getElementById('settings-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('settings-wrap').classList.toggle('open');
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#settings-wrap'))
+    document.getElementById('settings-wrap').classList.remove('open');
 });
 
 // ── Boot ───────────────────────────────────────────────────────────────────
