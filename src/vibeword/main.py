@@ -72,6 +72,19 @@ COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c", "#e6
 ROOM_TTL = 60 * 60 * 6  # 6 hours
 
 
+def _make_short_title(title: str) -> str:
+    """Compact display title for narrow UIs: strip boilerplate words."""
+    if not title:
+        return title
+    s = title
+    s = re.sub(r'(?i)^the\s+', '', s)
+    s = re.sub(r'(?i)\bnumbers?\b\.?\s*(?=\d)', '#', s)
+    s = re.sub(r'(?i)\bno\.?\s*(?=\d)', '#', s)
+    s = re.sub(r'(?i)\bcrossword\b\s*', '', s)
+    s = re.sub(r'\s{2,}', ' ', s).strip()
+    return s or title
+
+
 def _build_clue_maps(puzzle: Puzzle):
     """Build two lookup tables used to keep verified_clues consistent.
 
@@ -202,6 +215,7 @@ class Room:
     def puzzle_dict(self) -> dict:
         d: dict = {
             "title": self.puzzle.title,
+            "short_title": _make_short_title(self.puzzle.title or ''),
             "author": self.puzzle.author,
             "source_url": self.puzzle.source_url,
             "width": self.puzzle.width,

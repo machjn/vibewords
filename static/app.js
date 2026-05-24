@@ -99,7 +99,10 @@ function handleMessage(msg) {
         if (u.user_id !== myUserId && u.cursor)
           showUserSelection(u.user_id, u.color, u.cursor.row, u.cursor.col, u.cursor.direction);
       });
-      document.getElementById('puzzle-title').textContent = puzzle.title || 'Untitled';
+      const titleEl = document.getElementById('puzzle-title');
+      titleEl.dataset.full  = puzzle.title       || 'Untitled';
+      titleEl.dataset.short = puzzle.short_title || puzzle.title || 'Untitled';
+      _applyTitleLength();
       const authorEl = document.getElementById('puzzle-author');
       authorEl.textContent = puzzle.author ? `By ${puzzle.author}` : '';
       authorEl.style.display = puzzle.author ? '' : 'none';
@@ -1181,6 +1184,18 @@ window.addEventListener('resize', () => {
   clearTimeout(_fitTimer);
   _fitTimer = setTimeout(fitGridToScreen, 150);
 });
+
+// Switch puzzle title to short form when the header chip gets tight
+const _titleMQ = window.matchMedia('(max-width: 600px)');
+function _applyTitleLength() {
+  const el = document.getElementById('puzzle-title');
+  if (!el || !el.dataset.full) return;
+  el.textContent = _titleMQ.matches ? el.dataset.short : el.dataset.full;
+}
+_titleMQ.addEventListener('change', _applyTitleLength);
+
+// Re-render player chips when crossing the collapse threshold
+window.matchMedia('(max-width: 640px)').addEventListener('change', updatePlayerList);
 
 // Re-fit when layout breakpoints are crossed; clear any drag-set inline width on collapse
 window.matchMedia('(max-width: 800px)').addEventListener('change', e => {
