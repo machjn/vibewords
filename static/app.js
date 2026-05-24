@@ -100,6 +100,13 @@ function handleMessage(msg) {
           showUserSelection(u.user_id, u.color, u.cursor.row, u.cursor.col, u.cursor.direction);
       });
       document.getElementById('puzzle-title').textContent = puzzle.title || 'Untitled';
+      const srcLink = document.getElementById('source-link');
+      if (puzzle.source_url) {
+        srcLink.href = puzzle.source_url;
+        srcLink.style.display = '';
+      } else {
+        srcLink.style.display = 'none';
+      }
       document.title = puzzle.title ? `${puzzle.title} — VibeWord` : 'VibeWord';
       updatePlayerList();
       updateActionButtons();

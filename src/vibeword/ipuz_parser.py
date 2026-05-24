@@ -30,6 +30,7 @@ class Puzzle:
     title: str = ""
     author: str = ""
     links: dict = field(default_factory=dict)  # {direction: {clue_num: [chain]}}
+    source_url: str = ""  # public URL of the original puzzle, if known
 
 
 def parse_ipuz(data) -> Puzzle:
@@ -87,6 +88,7 @@ def parse_ipuz(data) -> Puzzle:
         title=raw.get("title", ""),
         author=raw.get("author", ""),
         links=raw.get("links", {}),
+        source_url=raw.get("origin", ""),
     )
 
 

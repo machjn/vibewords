@@ -197,6 +197,7 @@ class Room:
         d: dict = {
             "title": self.puzzle.title,
             "author": self.puzzle.author,
+            "source_url": self.puzzle.source_url,
             "width": self.puzzle.width,
             "height": self.puzzle.height,
             "cells": [

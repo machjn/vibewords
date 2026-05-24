@@ -240,7 +240,7 @@ def fetch_and_convert(puzzle_date: date | None = None) -> dict[str, Any]:
     url = puzzle_url_for_date(puzzle_date)
     xml_text = fetch_puzzle_xml(url)
     parsed = parse_xml(xml_text)
-    return convert(parsed, origin=url, puzzle_date=puzzle_date)
+    return convert(parsed, origin="https://www.independent.co.uk/crosswords", puzzle_date=puzzle_date)
 
 
 class IndependentScraper(Scraper):
