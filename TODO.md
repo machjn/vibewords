@@ -21,8 +21,10 @@ Minor:
 - assess exposure to injection attacks?
 - add some tests for scrapers etc.
 - the landing page could be clearer i.e. 'create a room' section. Browse rooms should be at the top.
-- issue with e.g. 
-Cryptic crossword No 30,013
+- issue with composite clues in e.g. Cryptic crossword No 30,013 (fixed)
+- export should be implemented on the backend rather than the frontend, on the Puzzle object, so it can be reused by other components
+- probably should in the long-term have the fifteen-squared scraper gather all the data it can (i.e. including answers and clues), then have the grid reconstructor extract from that only the data it needs to reconstruct the grid
+- put the pieces together: use the reconstructed grid and the clues/answers to construct a full puzzle object from fifteensquared. then add a script which does this and exports it to ipuz
 
 Major:
 - Add other scrapers

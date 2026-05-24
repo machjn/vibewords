@@ -632,22 +632,35 @@ def specs_from_puzzle(puzzle) -> list[WordSpec]:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: python -m vibeword.grid_reconstructor <puzzle.ipuz> [n]",
-              file=sys.stderr)
+        print(
+            "Usage:\n"
+            "  python -m vibeword.grid_reconstructor <puzzle.ipuz> [N]\n"
+            "  python -m vibeword.grid_reconstructor <fifteensquared-url> [N]",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
-    with open(sys.argv[1]) as f:
-        raw = json.load(f)
+    arg = sys.argv[1]
 
-    from vibeword.ipuz_parser import parse_ipuz
-    puzzle = parse_ipuz(raw)
+    if arg.startswith("http://") or arg.startswith("https://"):
+        from vibeword.scrapers.fifteensquared import specs_from_fifteensquared
+        print(f"Fetching clues from {arg} …")
+        specs = specs_from_fifteensquared(arg)
+        title = arg
+        n_values = [int(sys.argv[2])] if len(sys.argv) > 2 else [15]
+    else:
+        with open(arg) as f:
+            raw = json.load(f)
+        from vibeword.ipuz_parser import parse_ipuz
+        puzzle = parse_ipuz(raw)
+        specs = specs_from_puzzle(puzzle)
+        title = puzzle.title
+        n_values = [int(sys.argv[2])] if len(sys.argv) > 2 else [puzzle.height]
 
-    specs = specs_from_puzzle(puzzle)
-    print(f"Extracted {len(specs)} word specs from '{puzzle.title}'")
+    print(f"Extracted {len(specs)} word specs from '{title}'")
     for s in sorted(specs, key=lambda w: (w.index, w.direction)):
         print(f"  {s.index}{s.direction}  length={s.length}")
 
-    n_values = [int(sys.argv[2])] if len(sys.argv) > 2 else [puzzle.height]
     print(f"\nSearching for grids with N ∈ {n_values} …")
 
     import time
