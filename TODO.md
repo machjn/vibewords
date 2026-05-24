@@ -26,6 +26,9 @@ Minor:
 - about page, link to github /
 - find link to 15 squared for the puzzle? /
 - show author /
+- collapse controls to icons? /
+- fix mobile bug where calendar widget doesn't display Or is this just a firefox responsive design mode limitation/bug? /
+- bug where not all dots shown in chip
 
 Major:
 - Add other scrapers

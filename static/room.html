@@ -240,6 +240,9 @@
     }
 
     .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
       padding: 0.3rem 0.75rem;
       background: rgba(255,255,255,0.12);
       color: white;
@@ -251,6 +254,13 @@
       white-space: nowrap;
       transition: background 0.15s;
       flex-shrink: 0;
+    }
+
+    .btn-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      pointer-events: none;
     }
     .action-btn:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
     .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -618,6 +628,12 @@
       }
     }
 
+    /* Collapse action bar to icon-only on mobile */
+    @media (max-width: 600px) {
+      .btn-label { display: none; }
+      .action-btn { padding: 0.3rem 0.4rem; }
+    }
+
     /* Extra-narrow: abbreviate logo, drop player-count label */
     @media (max-width: 380px) {
       .logo { font-size: 0; }
@@ -657,13 +673,31 @@
   </header>
 
   <div id="clue-banner">
-    <button class="action-btn" id="reveal-letter-btn" disabled title="Reveal the letter in the selected cell">Reveal letter</button>
-    <button class="action-btn" id="reveal-word-btn" disabled title="Reveal all letters in the selected word">Reveal word</button>
-    <button class="action-btn" id="check-btn" disabled title="Remove wrong letters in the selected word">Check</button>
-    <button class="action-btn" id="check-all-btn" disabled title="Remove all wrong letters in the grid">Check all</button>
-    <button class="action-btn" id="clear-btn" disabled title="Clear non-crossing letters in the selected word">Clear</button>
+    <button class="action-btn" id="reveal-letter-btn" disabled title="Reveal the letter in the selected cell">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/></svg>
+      <span class="btn-label">Reveal letter</span>
+    </button>
+    <button class="action-btn" id="reveal-word-btn" disabled title="Reveal all letters in the selected word">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4"/><path d="M22 4h-4"/><circle cx="4" cy="20" r="2"/></svg>
+      <span class="btn-label">Reveal word</span>
+    </button>
+    <button class="action-btn" id="check-btn" disabled title="Remove wrong letters in the selected word">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+      <span class="btn-label">Check</span>
+    </button>
+    <button class="action-btn" id="check-all-btn" disabled title="Remove all wrong letters in the grid">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>
+      <span class="btn-label">Check all</span>
+    </button>
+    <button class="action-btn" id="clear-btn" disabled title="Clear non-crossing letters in the selected word">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 21H8a2 2 0 0 1-1.42-.587l-3.994-3.999a2 2 0 0 1 0-2.828l10-10a2 2 0 0 1 2.829 0l5.999 6a2 2 0 0 1 0 2.828L12.834 21"/><path d="m5.082 11.09 8.828 8.828"/></svg>
+      <span class="btn-label">Clear</span>
+    </button>
     <span class="btn-sep"></span>
-    <button class="action-btn" id="pencil-btn" title="Toggle between pen and pencil mode">Pencil</button>
+    <button class="action-btn" id="pencil-btn" title="Toggle between pen and pencil mode">
+      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+      <span class="btn-label">Pencil</span>
+    </button>
     <div id="settings-wrap">
       <button class="action-btn" id="settings-btn" title="Display settings">&#9881;</button>
       <div id="settings-panel">
