@@ -32,10 +32,32 @@
     .logo { font-weight: 800; font-size: 1.1rem; color: #3498db; letter-spacing: -0.5px; text-decoration: none; }
     .logo:hover { text-decoration: underline; }
 
+    /* ── Room chip ── */
+    #room-chip {
+      position: relative;
+      flex-shrink: 0;
+      max-width: 300px;
+    }
+
+    .room-chip-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .room-chip-bar:hover { background: #e6e6e6; }
+    #room-chip.open .room-chip-bar { background: #e6e6e6; border-color: #bbb; }
+
     #puzzle-title {
       font-weight: 600;
+      font-size: 0.85rem;
       color: #1a1a1a;
-      flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -49,6 +71,61 @@
     }
     #status-dot.connected { background: #2ecc71; }
     #status-dot.disconnected { background: #e74c3c; }
+
+    .room-chip-caret {
+      font-size: 0.55rem;
+      color: #888;
+      flex-shrink: 0;
+      transition: transform 0.15s;
+      line-height: 1;
+    }
+    #room-chip.open .room-chip-caret { transform: rotate(180deg); }
+
+    .room-chip-panel {
+      display: none;
+      flex-direction: column;
+      gap: 0.4rem;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      min-width: 210px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+      padding: 0.65rem 0.75rem;
+      z-index: 50;
+    }
+    #room-chip.open .room-chip-panel { display: flex; }
+
+    .room-chip-id {
+      font-size: 0.75rem;
+      color: #888;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .room-chip-id code {
+      font-family: ui-monospace, monospace;
+      color: #444;
+      letter-spacing: 0.03em;
+    }
+
+    .room-chip-action {
+      display: block;
+      width: 100%;
+      padding: 0.3rem 0.6rem;
+      background: #f5f5f0;
+      border: 1px solid #e0e0e0;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      font-family: inherit;
+      color: #333;
+      cursor: pointer;
+      text-align: left;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .room-chip-action:hover { background: #e8e8e4; }
 
     /* ── Player chips ── */
     #players-bar {
@@ -104,26 +181,6 @@
       border-bottom: 1px solid #3498db;
     }
 
-    .rooms-link {
-      font-size: 0.8rem;
-      color: #888;
-      text-decoration: none;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .rooms-link:hover { color: #3498db; }
-
-    .share-btn {
-      padding: 0.3rem 0.8rem;
-      background: #f0f0f0;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s;
-    }
-    .share-btn:hover { background: #e0e0e0; }
 
     /* ── Active clue banner ── */
     #clue-banner {
@@ -437,11 +494,20 @@
 <body>
   <header>
     <a class="logo" href="/">VibeWord</a>
-    <div id="puzzle-title">Loading...</div>
+    <div id="room-chip" class="room-chip">
+      <div class="room-chip-bar">
+        <div id="status-dot" title="Connecting…"></div>
+        <span id="puzzle-title">Loading…</span>
+        <span class="room-chip-caret">&#9660;</span>
+      </div>
+      <div class="room-chip-panel">
+        <div class="room-chip-id">Room <code id="room-id-display"></code></div>
+        <button id="share-btn" class="room-chip-action">Copy Room Link</button>
+        <a href="/rooms" class="room-chip-action">All rooms</a>
+      </div>
+    </div>
+    <div style="flex:1"></div>
     <div id="players-bar"></div>
-    <div id="status-dot"></div>
-    <a class="rooms-link" href="/rooms">All rooms</a>
-    <button class="share-btn" id="share-btn">Copy link</button>
   </header>
 
   <div id="clue-banner">

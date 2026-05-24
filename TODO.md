@@ -25,6 +25,8 @@ Minor:
 - export should be implemented on the backend rather than the frontend, on the Puzzle object, so it can be reused by other components
 - probably should in the long-term have the fifteen-squared scraper gather all the data it can (i.e. including answers and clues), then have the grid reconstructor extract from that only the data it needs to reconstruct the grid
 - put the pieces together: use the reconstructed grid and the clues/answers to construct a full puzzle object from fifteensquared. then add a script which does this and exports it to ipuz
+- about page, link to github
+- find link to 15 squared for the puzzle?
 
 Major:
 - Add other scrapers

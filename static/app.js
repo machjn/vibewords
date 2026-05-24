@@ -69,7 +69,9 @@ function send(msg) {
 }
 
 function setStatus(state) {
-  document.getElementById('status-dot').className = state;
+  const dot = document.getElementById('status-dot');
+  dot.className = state;
+  dot.title = state === 'connected' ? 'Connected' : state === 'disconnected' ? 'Disconnected' : 'Connecting…';
 }
 
 // ── Message handling ───────────────────────────────────────────────────────
@@ -972,8 +974,20 @@ document.getElementById('share-btn').addEventListener('click', async () => {
   try {
     await navigator.clipboard.writeText(location.href);
     btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = 'Copy link'; }, 2000);
+    setTimeout(() => { btn.textContent = 'Copy Room Link'; }, 2000);
   } catch { prompt('Share this link:', location.href); }
+});
+
+document.getElementById('room-id-display').textContent = roomId;
+
+document.getElementById('room-chip').addEventListener('click', e => {
+  if (e.target.closest('.room-chip-panel')) return;
+  document.getElementById('room-chip').classList.toggle('open');
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#room-chip'))
+    document.getElementById('room-chip').classList.remove('open');
 });
 
 // ── RMB pointer ────────────────────────────────────────────────────────────
