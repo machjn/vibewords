@@ -377,8 +377,6 @@ function updatePlayerList() {
   const bar = document.getElementById('players-bar');
   bar.innerHTML = '';
 
-  if (myUserId) bar.appendChild(makeMyChip());
-
   for (const [, user] of Object.entries(users)) {
     const chip = document.createElement('div');
     chip.className = 'player-chip';
@@ -387,11 +385,17 @@ function updatePlayerList() {
       `<span class="player-name">${escHtml(user.name || '?')}</span>`;
     bar.appendChild(chip);
   }
+
+  if (myUserId) bar.appendChild(makeMyChip());
 }
 
 function makeMyChip() {
   const chip = document.createElement('div');
   chip.className = 'player-chip my-chip';
+  if (myColor) {
+    chip.style.borderColor = myColor;
+    chip.style.background = hexToRgba(myColor, 0.07);
+  }
 
   const dot = document.createElement('span');
   dot.className = 'player-dot';

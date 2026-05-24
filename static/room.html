@@ -133,7 +133,6 @@
       align-items: center;
       gap: 0.5rem;
       flex-shrink: 0;
-      max-width: 360px;
       overflow: hidden;
     }
 
@@ -151,7 +150,7 @@
       max-width: 130px;
     }
 
-    .my-chip { border-style: solid; }
+    .my-chip { border-width: 1.5px; }
 
     .player-dot {
       width: 9px;
@@ -164,6 +163,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       color: #444;
+      cursor: default;
     }
 
     #my-name-el {
@@ -177,6 +177,9 @@
       cursor: text;
     }
 
+    #my-name-el:hover:not(:focus) {
+      border-bottom: 1px dashed #bbb;
+    }
     #my-name-el:focus {
       border-bottom: 1px solid #3498db;
     }
