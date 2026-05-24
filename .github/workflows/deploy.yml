@@ -1,0 +1,54 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # this image contains docker and gcloud dependencies
+    permissions:
+      contents: read
+      id-token: write   # required for Workload Identity Federation
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version from pyproject.toml
+        id: version
+        run: |
+          VERSION=$(grep '^version' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          SHA=$(git rev-parse --short HEAD)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "image_tag=${VERSION}-${SHA}" >> $GITHUB_OUTPUT
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker europe-west2-docker.pkg.dev --quiet
+
+      - name: Build and push image
+        env:
+          REGISTRY: europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword
+          TAG: ${{ steps.version.outputs.image_tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          docker build -t $REGISTRY:$TAG -t $REGISTRY:$VERSION -t $REGISTRY:latest .
+          docker push $REGISTRY:$TAG
+          docker push $REGISTRY:$VERSION
+          docker push $REGISTRY:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy vibeword \
+            --image europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword:${{ steps.version.outputs.image_tag }} \
+            --platform managed \
+            --region europe-west2 \
+            --timeout 3600 \
+            --allow-unauthenticated \
+            --min-instances=1 \
+            --max-instances=1

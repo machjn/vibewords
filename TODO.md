@@ -3,14 +3,14 @@
 Minor:
 - favicon /
 - clean up old rooms
-- show room id in rooms list
+- show room id in rooms list /
 - fix buttons changing size on toggle due to text label length
 - better organize buttons /
 - logo
 - deploy as github actions rather than manually
 - add temporary auth layer? if needed
-- make columns the default clue view
-- make clue area wider by default
+- make columns the default clue view /
+- make clue area wider by default /
 - address the scaling discrepancies at laptop/desktop sizes
 - pen/pencil toggle button could be icons rather than text?
 - copy link -> copy room link /
@@ -28,13 +28,17 @@ Minor:
 - show author /
 - collapse controls to icons? /
 - fix mobile bug where calendar widget doesn't display Or is this just a firefox responsive design mode limitation/bug? /
-- bug where not all dots shown in chip
+- bug where not all dots shown in chip. Couldn't reproduce
+- could have icons pen/pencil/hand modes, then select between the 3. Hand mode lets you select without opening keyboard
+- capture colour palette, create themes
+- background image on landing page?
+- show room timer in room dropdown?
 
 Major:
 - Add other scrapers
 - store state in db rather than memory
 - add application awareness of IAP identity, so that we can have admin users who can delete rooms, infer names etc.
-- support mobile?
+- support mobile? /
 
 Ideas:
 - add crossword editor?
@@ -44,6 +48,7 @@ Ideas:
 - gamify - add points
 - probably should in the long-term have the fifteen-squared scraper gather all the data it can (i.e. including answers and clues), then have the grid reconstructor extract from that only the data it needs to reconstruct the grid
 - put the pieces together: use the reconstructed grid and the clues/answers to construct a full puzzle object from fifteensquared. then add a script which does this and exports it to ipuz
+- make crossword surround be drawable? How would this work on mobile though?
 
 ## Reverse Engineering Grids
 
