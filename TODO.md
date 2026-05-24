@@ -27,6 +27,7 @@ Minor:
 - put the pieces together: use the reconstructed grid and the clues/answers to construct a full puzzle object from fifteensquared. then add a script which does this and exports it to ipuz
 - about page, link to github
 - find link to 15 squared for the puzzle?
+- show author 
 
 Major:
 - Add other scrapers

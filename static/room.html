@@ -126,6 +126,12 @@
       transition: background 0.15s;
     }
     .room-chip-action:hover { background: #e8e8e4; }
+    .room-chip-action.muted {
+      color: #aaa;
+      cursor: default;
+      pointer-events: none;
+      font-style: italic;
+    }
 
     /* ── Player chips ── */
     #players-bar {
@@ -507,6 +513,7 @@
         <div class="room-chip-id">Room <code id="room-id-display"></code></div>
         <button id="share-btn" class="room-chip-action">Copy Room Link</button>
         <a id="source-link" href="/rooms" class="room-chip-action" target="_blank" rel="noopener" style="display:none">View original puzzle</a>
+        <a id="solutions-link" class="room-chip-action muted" target="_blank" rel="noopener">Solutions: searching…</a>
         <a href="/rooms" class="room-chip-action">All rooms</a>
       </div>
     </div>

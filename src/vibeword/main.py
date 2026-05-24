@@ -1,3 +1,5 @@
+import asyncio
+import json
 import logging
 import os
 import random
@@ -7,8 +9,11 @@ import uuid
 from contextlib import asynccontextmanager
 from datetime import date
 from typing import Dict, Optional
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 
-from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -174,6 +179,7 @@ class Room:
         self.pencil_grid: Dict[str, str] = {}
         self.revealed: set = set()
         self.verified_clues: set = set()
+        self.solutions_url: Optional[str] = None  # None=searching, ""=not found, url=found
         self._cell_to_clue: Dict[str, set] = {}
         self._clue_to_cells: Dict[str, list] = {}
         self.clients: Dict[WebSocket, dict] = {}
@@ -213,6 +219,7 @@ class Room:
             d["solution"] = self.puzzle.solution
         if self.puzzle.links:
             d["links"] = self.puzzle.links
+        d["solutions_url"] = self.solutions_url
         return d
 
     def users_list(self) -> list:
@@ -238,6 +245,67 @@ class Room:
 rooms: Dict[str, Room] = {}
 
 
+def _fetch_fifteensquared_url(source_url: str) -> str:
+    """Search FifteenSquared for a solutions post matching this Guardian puzzle.
+
+    FifteenSquared post URLs cannot be constructed directly: the slug includes the
+    setter name (e.g. "guardian-30005-pavo") which is not in the Guardian puzzle
+    URL, and title formatting varies across posts (commas in numbers, type prefix
+    present or absent, separator characters differ).  This is therefore best-effort:
+    we search the WordPress REST API and confirm by puzzle number in the slug.
+    Returns the post URL, or '' if not found or on any error.
+    """
+    m = re.search(r"theguardian\.com/crosswords/([a-z-]+)/(\d+)", source_url)
+    if not m:
+        return ""
+    crossword_type, puzzle_number = m.group(1), m.group(2)
+
+    # FifteenSquared titles use thousands-separator commas ("Guardian 30,005 / Pavo"),
+    # but the slug always uses the plain number ("guardian-30005-pavo"). Search with
+    # the formatted number so WordPress matches the title; confirm via the slug.
+    try:
+        formatted_number = f"{int(puzzle_number):,}"
+    except ValueError:
+        formatted_number = puzzle_number
+
+    def _search(query: str) -> str:
+        # At most 2 attempts: retry once on transient network errors only.
+        api_url = (
+            f"https://www.fifteensquared.net/wp-json/wp/v2/posts"
+            f"?search={quote(query)}&per_page=5&_fields=link,title,slug"
+        )
+        req = Request(api_url, headers={"User-Agent": "vibeword/0.1 (+personal use)"})
+        last_exc: Exception | None = None
+        for attempt in range(2):
+            try:
+                with urlopen(req, timeout=5) as resp:
+                    posts = json.loads(resp.read())
+                for post in posts:
+                    if puzzle_number in post.get("slug", ""):
+                        return post["link"]
+                return ""
+            except HTTPError:
+                raise
+            except (URLError, OSError, TimeoutError) as exc:
+                last_exc = exc
+                if attempt == 0:
+                    time.sleep(1)
+        raise last_exc  # type: ignore[misc]
+
+    try:
+        url = _search(f"guardian {crossword_type} {formatted_number}")
+        if not url:
+            url = _search(f"guardian {formatted_number}")
+        if not url:
+            url = _search(f"guardian {puzzle_number}")
+        if url:
+            logger.debug("FifteenSquared match for %s/%s: %s", crossword_type, puzzle_number, url)
+        return url
+    except Exception as exc:
+        logger.debug("FifteenSquared lookup failed for %s: %s", source_url, exc)
+    return ""
+
+
 def prune_rooms():
     now = time.time()
     stale = [rid for rid, room in rooms.items() if now - room.last_activity > ROOM_TTL]
@@ -245,6 +313,20 @@ def prune_rooms():
         del rooms[rid]
     if stale:
         logger.info("Pruned %d stale room(s) | active=%d", len(stale), len(rooms))
+
+
+async def _fifteensquared_background(room_id: str):
+    """Fetch a FifteenSquared solutions URL in the background and broadcast the result."""
+    room = rooms.get(room_id)
+    if not room or not room.puzzle.source_url:
+        return
+    url = await asyncio.get_event_loop().run_in_executor(
+        None, _fetch_fifteensquared_url, room.puzzle.source_url
+    )
+    if room_id not in rooms:
+        return  # room was pruned while we were waiting
+    room.solutions_url = url  # "" if not found, url string if found
+    await room.broadcast({"type": "solutions_url", "url": url})
 
 
 def _make_room(puzzle: Puzzle, source: str = "upload") -> str:
@@ -271,7 +353,7 @@ def _make_room(puzzle: Puzzle, source: str = "upload") -> str:
 # ── Room creation: file upload ─────────────────────────────────────────────
 
 @app.post("/api/rooms")
-async def create_room(file: UploadFile = File(...)):
+async def create_room(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     prune_rooms()
     content = await file.read()
     try:
@@ -279,7 +361,9 @@ async def create_room(file: UploadFile = File(...)):
     except Exception as e:
         logger.warning("Failed to parse uploaded file %r: %s", file.filename, e)
         raise HTTPException(status_code=400, detail=f"Could not parse ipuz file: {e}")
-    return {"room_id": _make_room(puzzle, source=f"file:{file.filename}")}
+    room_id = _make_room(puzzle, source=f"file:{file.filename}")
+    background_tasks.add_task(_fifteensquared_background, room_id)
+    return {"room_id": room_id}
 
 
 # ── Scrapers metadata ──────────────────────────────────────────────────────
@@ -305,7 +389,7 @@ class RoomFromDate(BaseModel):
 
 
 @app.post("/api/rooms/date")
-def create_room_from_date(body: RoomFromDate):
+def create_room_from_date(body: RoomFromDate, background_tasks: BackgroundTasks):
     prune_rooms()
     entry = _SCRAPERS.get(body.scraper)
     if entry is None:
@@ -332,7 +416,9 @@ def create_room_from_date(body: RoomFromDate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not parse fetched puzzle: {e}")
 
-    return {"room_id": _make_room(puzzle, source=body.scraper)}
+    room_id = _make_room(puzzle, source=body.scraper)
+    background_tasks.add_task(_fifteensquared_background, room_id)
+    return {"room_id": room_id}
 
 
 # ── Room creation: by URL ──────────────────────────────────────────────────
@@ -343,7 +429,7 @@ class RoomFromUrl(BaseModel):
 
 
 @app.post("/api/rooms/url")
-def create_room_from_url(body: RoomFromUrl):
+def create_room_from_url(body: RoomFromUrl, background_tasks: BackgroundTasks):
     prune_rooms()
     entry = _SCRAPERS.get(body.scraper)
     if entry is None:
@@ -367,7 +453,9 @@ def create_room_from_url(body: RoomFromUrl):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not parse fetched puzzle: {e}")
 
-    return {"room_id": _make_room(puzzle, source=body.scraper)}
+    room_id = _make_room(puzzle, source=body.scraper)
+    background_tasks.add_task(_fifteensquared_background, room_id)
+    return {"room_id": room_id}
 
 
 # ── Room list ──────────────────────────────────────────────────────────────

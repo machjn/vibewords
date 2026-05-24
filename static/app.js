@@ -107,6 +107,7 @@ function handleMessage(msg) {
       } else {
         srcLink.style.display = 'none';
       }
+      updateSolutionsLink(puzzle.solutions_url);
       document.title = puzzle.title ? `${puzzle.title} — VibeWord` : 'VibeWord';
       updatePlayerList();
       updateActionButtons();
@@ -169,6 +170,10 @@ function handleMessage(msg) {
 
     case 'clue_verified':
       verifyClue(msg.key);
+      break;
+
+    case 'solutions_url':
+      updateSolutionsLink(msg.url);
       break;
   }
 }
@@ -989,6 +994,23 @@ document.getElementById('share-btn').addEventListener('click', async () => {
 });
 
 document.getElementById('room-id-display').textContent = roomId;
+
+function updateSolutionsLink(url) {
+  const el = document.getElementById('solutions-link');
+  if (url === null || url === undefined) {
+    el.textContent = 'Solutions: searching…';
+    el.className = 'room-chip-action muted';
+    el.removeAttribute('href');
+  } else if (url === '') {
+    el.textContent = 'Solutions: not found';
+    el.className = 'room-chip-action muted';
+    el.removeAttribute('href');
+  } else {
+    el.textContent = 'Solutions (15²)';
+    el.className = 'room-chip-action';
+    el.href = url;
+  }
+}
 
 document.getElementById('room-chip').addEventListener('click', e => {
   if (e.target.closest('.room-chip-panel')) return;
