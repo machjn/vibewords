@@ -820,14 +820,6 @@ function updateActiveClue(r, c, dir) {
   document.getElementById('clue-display').textContent = clue ? `${numLabel} ${dirLabel}: ${clue.text}` : '';
 }
 
-function toggleClueDisplay() {
-  const bar = document.getElementById('clue-display');
-  const btn = document.getElementById('clue-btn');
-  const visible = bar.classList.toggle('visible');
-  btn.classList.toggle('active', visible);
-  localStorage.setItem('vw-clue-bar', visible ? '1' : '');
-}
-
 // ── Reveal ─────────────────────────────────────────────────────────────────
 
 function revealLetter() {
@@ -1014,7 +1006,6 @@ function escHtml(str)   { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;'
 
 // ── Button wiring ──────────────────────────────────────────────────────────
 
-document.getElementById('clue-btn').addEventListener('click', toggleClueDisplay);
 document.getElementById('pencil-btn').addEventListener('click', togglePencil);
 document.getElementById('show-pencil-btn').addEventListener('click', togglePencilVisibility);
 document.getElementById('others-btn').addEventListener('click', toggleOthers);
@@ -1154,33 +1145,6 @@ document.addEventListener('mouseup', e => {
   send({ type: 'pointer_clear' });
 });
 
-// ── Stream mode toggle ─────────────────────────────────────────────────────
-
-function applyStreamMode(on) {
-  const wrap = document.getElementById('clue-sections-wrap');
-  const btn  = document.getElementById('clue-mode-btn');
-  wrap.classList.toggle('stream-mode', on);
-  btn.classList.toggle('active', on);
-  if (on) localStorage.setItem('vw-stream', '1');
-  else    localStorage.removeItem('vw-stream');
-  const active = document.querySelector('.clue-item.active');
-  if (active) active.scrollIntoView({ block: 'nearest' });
-}
-
-document.getElementById('clue-mode-btn').addEventListener('click', () => {
-  const isStream = !document.getElementById('clue-sections-wrap').classList.contains('stream-mode');
-  applyStreamMode(isStream);
-});
-
-if (localStorage.getItem('vw-stream')) applyStreamMode(true);
-
-// Clue bar defaults to visible; only hide if user explicitly turned it off
-if (localStorage.getItem('vw-clue-bar') === '') {
-  document.getElementById('clue-btn').classList.remove('active');
-} else {
-  document.getElementById('clue-display').classList.add('visible');
-}
-
 // ── Clue panel drag-to-resize ──────────────────────────────────────────────
 
 document.getElementById('clue-resize-handle').addEventListener('mousedown', e => {
@@ -1218,8 +1182,11 @@ window.addEventListener('resize', () => {
   _fitTimer = setTimeout(fitGridToScreen, 150);
 });
 
-// Re-fit when layout breakpoints are crossed
-window.matchMedia('(max-width: 800px)').addEventListener('change', fitGridToScreen);
+// Re-fit when layout breakpoints are crossed; clear any drag-set inline width on collapse
+window.matchMedia('(max-width: 800px)').addEventListener('change', e => {
+  if (e.matches) document.getElementById('clue-panel').style.width = '';
+  fitGridToScreen();
+});
 window.matchMedia('(max-width: 520px)').addEventListener('change', fitGridToScreen);
 
 // ── Settings panel ─────────────────────────────────────────────────────────

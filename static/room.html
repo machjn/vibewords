@@ -221,6 +221,7 @@
       gap: 0.5rem 0.6rem;
     }
 
+    /* Active clue — shown automatically only when the clue panel is hidden */
     #clue-display {
       background: #2a2a2a;
       color: #ccc;
@@ -231,9 +232,6 @@
       border-top: 1px solid #3a3a3a;
       display: none;
     }
-    #clue-display.visible { display: block; }
-    #clue-btn.active { background: #2ecc71; border-color: #2ecc71; }
-    #clue-btn.active:hover { background: #27ae60; border-color: #27ae60; }
 
     .action-btn {
       padding: 0.3rem 0.75rem;
@@ -413,6 +411,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      container-type: inline-size;
     }
 
 
@@ -444,30 +443,25 @@
       padding: 0 0.75rem 0.4rem;
     }
 
-    /* ── Stream mode ── */
-    .clue-sections-wrap.stream-mode {
-      flex-direction: row;
-    }
-
-    .clue-sections-wrap.stream-mode .clue-section + .clue-section {
-      border-top: none;
-      border-left: 1px solid #e0e0e0;
-    }
-
-    .clue-sections-wrap.stream-mode .clue-section h3 {
-      position: sticky;
-      top: 0;
-      background: white;
-      z-index: 1;
-      padding-top: 0.3rem;
-      padding-bottom: 0.3rem;
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    .clue-sections-wrap.stream-mode .clue-item {
-      font-size: 0.95rem;
-      padding: 0.18rem 0.5rem;
-      line-height: 1.4;
+    /* Columns when the panel is wide enough; rows when narrow */
+    @container (min-width: 320px) {
+      .clue-sections-wrap { flex-direction: row; }
+      .clue-sections-wrap .clue-section + .clue-section {
+        border-top: none;
+        border-left: 1px solid #e0e0e0;
+      }
+      .clue-sections-wrap .clue-section h3 {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 1;
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .clue-sections-wrap .clue-item {
+        padding: 0.18rem 0.5rem;
+      }
     }
 
     .clue-section ul { list-style: none; }
@@ -624,6 +618,8 @@
       .clue-panel { display: none; }
       /* Top-align the grid so the virtual keyboard doesn't cover it */
       .grid-centering { justify-content: flex-start; }
+      /* Show active clue bar only when the clue panel is hidden */
+      #clue-display { display: block; }
     }
   </style>
 </head>
@@ -660,10 +656,8 @@
     <div id="settings-wrap">
       <button class="action-btn" id="settings-btn" title="Display settings">&#9881;</button>
       <div id="settings-panel">
-        <button id="clue-btn" class="settings-item active">Show clue bar</button>
         <button id="show-pencil-btn" class="settings-item active">Show pencil marks</button>
         <button id="others-btn" class="settings-item active">Show other players</button>
-        <button id="clue-mode-btn" class="settings-item">Column clue layout</button>
       </div>
     </div>
   </div>
