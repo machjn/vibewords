@@ -17,7 +17,7 @@ let verifiedClues = new Set(); // "a-5" / "d-12" — words confirmed correct (sh
 // ── Identity persistence ───────────────────────────────────────────────────
 
 function saveIdentity() {
-  localStorage.setItem('vw-identity', JSON.stringify({ userId: myUserId, color: myColor, name: myName }));
+  localStorage.setItem('vw-identity', JSON.stringify({ userId: myUserId, name: myName }));
 }
 
 function loadIdentity() {
@@ -35,10 +35,9 @@ let _retryTimer = null;
 
 function connect() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const { userId, color, name } = loadIdentity();
+  const { userId, name } = loadIdentity();
   const params = new URLSearchParams();
   if (userId) params.set('user_id', userId);
-  if (color)  params.set('color', color);
   if (name)   params.set('name', name);
   const qs = params.size ? '?' + params.toString() : '';
   socket = new WebSocket(`${proto}://${location.host}/ws/${roomId}${qs}`);

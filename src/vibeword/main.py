@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 import re
 import time
 import uuid
@@ -177,14 +178,16 @@ class Room:
         self._clue_to_cells: Dict[str, list] = {}
         self.clients: Dict[WebSocket, dict] = {}
         self.last_activity = time.time()
-        self._color_index = 0
         self._player_count = 0
         self._cell_to_clue, self._clue_to_cells = _build_clue_maps(puzzle)
 
     def next_color(self) -> str:
-        color = COLORS[self._color_index % len(COLORS)]
-        self._color_index += 1
-        return color
+        used = {info["color"] for info in self.clients.values()}
+        available = [c for c in COLORS if c not in used]
+        if available:
+            return random.choice(available)
+        # All 8 colours taken — pick randomly anyway (>8 players)
+        return random.choice(COLORS)
 
     def next_player_name(self) -> str:
         self._player_count += 1
@@ -419,7 +422,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
     stored_name  = params.get("name", "").strip()[:20]
 
     user_id = stored_id    if re.fullmatch(r"[0-9a-f]{6}", stored_id)           else uuid.uuid4().hex[:6]
-    color   = stored_color if re.fullmatch(r"#[0-9a-fA-F]{6}", stored_color)    else room.next_color()
+    used_colors = {info["color"] for info in room.clients.values()}
+    color   = stored_color if re.fullmatch(r"#[0-9a-fA-F]{6}", stored_color) and stored_color not in used_colors else room.next_color()
     name    = stored_name  if stored_name                                         else room.next_player_name()
 
     room.clients[websocket] = {"user_id": user_id, "color": color, "name": name, "cursor": None}
