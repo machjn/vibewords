@@ -126,7 +126,15 @@
       transition: background 0.15s;
     }
     .room-chip-action:hover { background: #e8e8e4; }
-    .room-chip-action.muted {
+    .room-chip-link {
+      display: block;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.8rem;
+      color: #4a7cb5;
+      text-decoration: none;
+    }
+    .room-chip-link:hover { text-decoration: underline; }
+    .room-chip-link.muted {
       color: #aaa;
       cursor: default;
       pointer-events: none;
@@ -512,9 +520,9 @@
       <div class="room-chip-panel">
         <div class="room-chip-id">Room <code id="room-id-display"></code></div>
         <button id="share-btn" class="room-chip-action">Copy Room Link</button>
-        <a id="source-link" href="/rooms" class="room-chip-action" target="_blank" rel="noopener" style="display:none">View original puzzle</a>
-        <a id="solutions-link" class="room-chip-action muted" target="_blank" rel="noopener">Solutions: searching…</a>
-        <a href="/rooms" class="room-chip-action">All rooms</a>
+        <a id="source-link" href="/rooms" class="room-chip-link" target="_blank" rel="noopener" style="display:none">View original puzzle</a>
+        <a id="solutions-link" class="room-chip-link muted" target="_blank" rel="noopener">Solutions (15²): searching…</a>
+        <a href="/rooms" class="room-chip-link">All rooms</a>
       </div>
     </div>
     <div style="flex:1"></div>

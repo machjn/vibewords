@@ -998,16 +998,16 @@ document.getElementById('room-id-display').textContent = roomId;
 function updateSolutionsLink(url) {
   const el = document.getElementById('solutions-link');
   if (url === null || url === undefined) {
-    el.textContent = 'Solutions: searching…';
-    el.className = 'room-chip-action muted';
+    el.textContent = 'Solutions (15²): searching…';
+    el.className = 'room-chip-link muted';
     el.removeAttribute('href');
   } else if (url === '') {
-    el.textContent = 'Solutions: not found';
-    el.className = 'room-chip-action muted';
+    el.textContent = 'Solutions (15²): not found';
+    el.className = 'room-chip-link muted';
     el.removeAttribute('href');
   } else {
     el.textContent = 'Solutions (15²)';
-    el.className = 'room-chip-action';
+    el.className = 'room-chip-link';
     el.href = url;
   }
 }
