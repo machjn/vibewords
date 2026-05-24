@@ -34,9 +34,13 @@ uvicorn vibeword.main:app --reload
 This is a CLI tool to download a Guardian crossword as an `.ipuz` file 
 
 
-## Deploying
+## Deployment
 
-Right now this is deployed on GCP via Cloud Run. The container image is pushed to a repository in the GCP Artifact Registry.
+Right now this is deployed to GCP.
+
+There is a github actions job that builds an OCI image, pushes to the Artifact Registry, and deploys to Cloud Run on commits to main.
+
+## Manual Deployment
 
 Prerequisites:
 

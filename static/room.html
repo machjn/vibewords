@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="/favicon.png">
+  <script src="/theme.js"></script>
+  <link rel="stylesheet" href="/theme.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&display=swap">
   <title>VibeWord</title>
   <style>
@@ -11,7 +13,7 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f5f0;
+      background: var(--bg);
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -20,8 +22,8 @@
 
     /* ── Header ── */
     header {
-      background: white;
-      border-bottom: 1px solid #e0e0e0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
       padding: 0 1.25rem;
       height: 48px;
       display: grid;
@@ -31,7 +33,7 @@
       flex-shrink: 0;
     }
 
-    .logo { font-weight: 800; font-size: 1.1rem; color: #3498db; letter-spacing: -0.5px; text-decoration: none; }
+    .logo { font-weight: 800; font-size: 1.1rem; color: var(--accent); letter-spacing: -0.5px; text-decoration: none; }
     .logo:hover { text-decoration: underline; }
 
     /* ── Room chip ── */
@@ -47,19 +49,19 @@
       gap: 0.4rem;
       padding: 0.2rem 0.55rem;
       border-radius: 6px;
-      background: #f0f0f0;
-      border: 1px solid #ddd;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
       cursor: pointer;
       user-select: none;
       transition: background 0.15s;
     }
-    .room-chip-bar:hover { background: #e6e6e6; }
-    #room-chip.open .room-chip-bar { background: #e6e6e6; border-color: #bbb; }
+    .room-chip-bar:hover { background: var(--surface-hover); }
+    #room-chip.open .room-chip-bar { background: var(--surface-hover); border-color: var(--text-4); }
 
     #puzzle-title {
       font-weight: 600;
       font-size: 0.85rem;
-      color: #1a1a1a;
+      color: var(--text);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -68,7 +70,7 @@
     #puzzle-author {
       font-family: 'Caveat', cursive;
       font-size: 1.2rem;
-      color: #333;
+      color: var(--text-2);
       text-align: center;
       margin-top: 0.5rem;
     }
@@ -76,15 +78,15 @@
     #status-dot {
       width: 8px; height: 8px;
       border-radius: 50%;
-      background: #ccc;
+      background: var(--text-4);
       flex-shrink: 0;
     }
-    #status-dot.connected { background: #2ecc71; }
-    #status-dot.disconnected { background: #e74c3c; }
+    #status-dot.connected { background: var(--correct); }
+    #status-dot.disconnected { background: var(--error); }
 
     .room-chip-caret {
       font-size: 0.55rem;
-      color: #888;
+      color: var(--text-3);
       flex-shrink: 0;
       transition: transform 0.15s;
       line-height: 1;
@@ -99,10 +101,10 @@
       top: calc(100% + 6px);
       left: 0;
       min-width: 210px;
-      background: white;
-      border: 1px solid #ddd;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 14px var(--shadow);
       padding: 0.65rem 0.75rem;
       z-index: 50;
     }
@@ -110,41 +112,41 @@
 
     .room-chip-id {
       font-size: 0.75rem;
-      color: #888;
+      color: var(--text-3);
       padding-bottom: 0.3rem;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid var(--border);
     }
     .room-chip-id code {
       font-family: ui-monospace, monospace;
-      color: #444;
+      color: var(--text-2);
       letter-spacing: 0.03em;
     }
 
     .room-chip-action {
       display: block;
       padding: 0.3rem 0.6rem;
-      background: #f5f5f0;
-      border: 1px solid #e0e0e0;
+      background: var(--bg);
+      border: 1px solid var(--border);
       border-radius: 5px;
       font-size: 0.8rem;
       font-family: inherit;
-      color: #333;
+      color: var(--text-2);
       cursor: pointer;
       text-align: left;
       text-decoration: none;
       transition: background 0.15s;
     }
-    .room-chip-action:hover { background: #e8e8e4; }
+    .room-chip-action:hover { background: var(--surface-hover); }
     .room-chip-link {
       display: block;
       padding: 0.2rem 0.6rem;
       font-size: 0.8rem;
-      color: #4a7cb5;
+      color: var(--accent);
       text-decoration: none;
     }
     .room-chip-link:hover { text-decoration: underline; }
     .room-chip-link.muted {
-      color: #aaa;
+      color: var(--text-4);
       cursor: default;
       pointer-events: none;
       font-style: italic;
@@ -166,8 +168,8 @@
       padding: 0.2rem 0.55rem;
       border-radius: 12px;
       font-size: 0.8rem;
-      background: #f0f0f0;
-      border: 1px solid #ddd;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
       white-space: nowrap;
       overflow: hidden;
       max-width: 130px;
@@ -185,12 +187,12 @@
     .player-name {
       overflow: hidden;
       text-overflow: ellipsis;
-      color: #444;
+      color: var(--text-2);
       cursor: default;
     }
 
     #my-name-el {
-      color: #1a1a1a;
+      color: var(--text);
       font-weight: 600;
       outline: none;
       min-width: 2ch;
@@ -201,16 +203,16 @@
     }
 
     #my-name-el:hover:not(:focus) {
-      border-bottom: 1px dashed #bbb;
+      border-bottom: 1px dashed var(--text-4);
     }
     #my-name-el:focus {
-      border-bottom: 1px solid #3498db;
+      border-bottom: 1px solid var(--accent);
     }
 
 
     /* ── Active clue banner ── */
     #clue-banner {
-      background: #1a1a1a;
+      background: var(--toolbar);
       color: white;
       padding: 0.4rem 1.25rem;
       font-size: 1rem;
@@ -223,19 +225,19 @@
 
     /* Active clue — shown automatically only when the clue panel is hidden */
     #clue-display {
-      background: #2a2a2a;
-      color: #ccc;
+      background: var(--toolbar-2);
+      color: var(--text-4);
       padding: 0.45rem 1.25rem;
       font-size: 1rem;
       line-height: 1.4;
       min-height: calc(2 * 1.4em + 2 * 0.45rem);
       flex-shrink: 0;
-      border-top: 1px solid #3a3a3a;
+      border-top: 1px solid var(--toolbar-3);
       display: none;
     }
     #clue-display:empty::before {
       content: 'Select a clue…';
-      color: #555;
+      color: rgba(255,255,255,0.3);
       font-style: italic;
     }
 
@@ -264,11 +266,11 @@
     }
     .action-btn:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
     .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .action-btn.active { background: #e67e22; border-color: #e67e22; }
-    #pencil-btn.active { background: #3498db; border-color: #3498db; }
-    #pencil-btn.active:hover { background: #2980b9; border-color: #2980b9; }
-    #export-btn { background: #5dade2; border-color: #5dade2; }
-    #export-btn:hover { background: #3498db; border-color: #3498db; }
+    .action-btn.active { background: var(--warning); border-color: var(--warning); }
+    #pencil-btn.active { background: var(--accent); border-color: var(--accent); }
+    #pencil-btn.active:hover { background: var(--accent-2); border-color: var(--accent-2); }
+    #export-btn { background: var(--accent); border-color: var(--accent); }
+    #export-btn:hover { background: var(--accent); border-color: var(--accent); }
 
     .btn-sep {
       width: 1px;
@@ -286,14 +288,14 @@
 
     /* Pencil and revealed letter styles */
     .cell input.pencil {
-      color: #7f8c8d;
+      color: var(--pencil);
       font-style: italic;
       font-weight: 400;
     }
-    .cell input.revealed { color: #e74c3c; }
+    .cell input.revealed { color: var(--error); }
     /* word-correct after revealed so green wins when a revealed word is complete */
-    .cell input.word-correct { color: #27ae60; }
-    .clue-item.word-correct { color: #27ae60; font-weight: 600; }
+    .cell input.word-correct { color: var(--correct); }
+    .clue-item.word-correct { color: var(--correct); font-weight: 600; }
 
     /* ── Main layout ── */
     .main {
@@ -323,8 +325,8 @@
     #crossword-grid {
       display: grid;
       gap: 1px;
-      border: 2px solid #1a1a1a;
-      background: #1a1a1a;
+      border: 2px solid var(--grid-line);
+      background: var(--grid-line);
       flex-shrink: 0;
     }
 
@@ -332,10 +334,10 @@
       width: 38px;
       height: 38px;
       position: relative;
-      background: white;
+      background: var(--surface);
     }
 
-    .cell.black { background: #1a1a1a; }
+    .cell.black { background: var(--toolbar); }
 
     .cell-number {
       position: absolute;
@@ -343,7 +345,7 @@
       left: 2px;
       font-size: 9px;
       font-weight: 600;
-      color: #333;
+      color: var(--text-2);
       line-height: 1;
       pointer-events: none;
       z-index: 2;
@@ -360,7 +362,7 @@
       text-align: center;
       font-size: 18px;
       font-weight: 700;
-      color: #1a1a1a;
+      color: var(--text);
       text-transform: uppercase;
       cursor: pointer;
       caret-color: transparent;
@@ -382,8 +384,8 @@
     .clue-panel {
       width: clamp(240px, 28vw, 450px);
       flex-shrink: 0;
-      background: white;
-      border-left: 1px solid #e0e0e0;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
       display: flex;
       flex-direction: row;
       overflow: hidden;
@@ -399,7 +401,7 @@
       transition: background 0.15s;
     }
     .clue-resize-handle:hover,
-    .clue-resize-handle.dragging { background: rgba(52,152,219,0.12); }
+    .clue-resize-handle.dragging { background: var(--accent-subtle); }
     .clue-resize-handle::after {
       content: '';
       position: absolute;
@@ -408,11 +410,11 @@
       transform: translateY(-50%);
       width: 1px;
       height: 28px;
-      background: #d0d0d0;
+      background: var(--border);
       border-radius: 1px;
     }
     .clue-resize-handle:hover::after,
-    .clue-resize-handle.dragging::after { background: #3498db; }
+    .clue-resize-handle.dragging::after { background: var(--accent); }
 
     /* The scrollable content area inside the panel */
     .clue-panel-inner {
@@ -441,7 +443,7 @@
     }
 
     .clue-section + .clue-section {
-      border-top: 1px solid #e0e0e0;
+      border-top: 1px solid var(--border);
     }
 
     .clue-section h3 {
@@ -449,7 +451,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #888;
+      color: var(--text-3);
       padding: 0 0.75rem 0.4rem;
     }
 
@@ -458,16 +460,16 @@
       .clue-sections-wrap { flex-direction: row; }
       .clue-sections-wrap .clue-section + .clue-section {
         border-top: none;
-        border-left: 1px solid #e0e0e0;
+        border-left: 1px solid var(--border);
       }
       .clue-sections-wrap .clue-section h3 {
         position: sticky;
         top: 0;
-        background: white;
+        background: var(--surface);
         z-index: 1;
         padding-top: 0.3rem;
         padding-bottom: 0.3rem;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--border);
       }
       .clue-sections-wrap .clue-item {
         padding: 0.18rem 0.5rem;
@@ -481,12 +483,12 @@
       font-size: 0.95rem;
       line-height: 1.4;
       cursor: pointer;
-      color: #333;
+      color: var(--text-2);
       border-left: 3px solid transparent;
       transition: background 0.1s;
     }
 
-    .clue-item:hover { background: #f5f5f0; }
+    .clue-item:hover { background: var(--bg); }
 
     /* background + border-color applied via JS using the player's colour */
     .clue-item.active { font-weight: 600; }
@@ -505,16 +507,16 @@
     }
     #disconnected-banner.show { display: flex; }
     #disconnected-banner div {
-      background: white;
+      background: var(--surface);
       border-radius: 10px;
       padding: 2rem;
       text-align: center;
     }
     #disconnected-banner h2 { margin-bottom: 0.5rem; }
-    #disconnected-banner p { color: #666; margin-bottom: 1rem; }
+    #disconnected-banner p { color: var(--text-3); margin-bottom: 1rem; }
     #disconnected-banner button {
       padding: 0.5rem 1.25rem;
-      background: #3498db;
+      background: var(--accent);
       color: white;
       border: none;
       border-radius: 6px;
@@ -535,10 +537,10 @@
       top: calc(100% + 4px);
       right: 0;
       min-width: 195px;
-      background: white;
-      border: 1px solid #ddd;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 14px var(--shadow);
       padding: 0.4rem;
       z-index: 50;
     }
@@ -554,23 +556,23 @@
       border-radius: 5px;
       font-size: 0.88rem;
       font-family: inherit;
-      color: #333;
+      color: var(--text-2);
       cursor: pointer;
       text-align: left;
       white-space: nowrap;
       transition: background 0.1s;
     }
-    .settings-item:hover { background: #f5f5f0; }
+    .settings-item:hover { background: var(--bg); }
     .settings-item::before {
       content: '';
       display: inline-block;
       width: 13px;
       height: 13px;
       border-radius: 3px;
-      border: 1.5px solid #ccc;
+      border: 1.5px solid var(--text-4);
       flex-shrink: 0;
     }
-    .settings-item.active::before { background: #3498db; border-color: #3498db; }
+    .settings-item.active::before { background: var(--accent); border-color: var(--accent); }
 
     /* ── Players dropdown (collapsed state) ── */
     #players-bar { position: relative; }
@@ -581,10 +583,10 @@
       position: absolute;
       top: calc(100% + 6px);
       right: 0;
-      background: white;
-      border: 1px solid #ddd;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 14px var(--shadow);
       padding: 0.4rem 0.5rem;
       z-index: 50;
       min-width: 140px;
@@ -602,23 +604,23 @@
         height: 36vh;
         min-height: 160px;
         border-left: none;
-        border-top: 1px solid #e0e0e0;
+        border-top: 1px solid var(--border);
         flex-shrink: 0;
       }
       .clue-resize-handle { display: none; }
       .clue-sections-wrap { flex-direction: row; }
       .clue-sections-wrap .clue-section + .clue-section {
         border-top: none;
-        border-left: 1px solid #e0e0e0;
+        border-left: 1px solid var(--border);
       }
       .clue-sections-wrap .clue-section h3 {
         position: sticky;
         top: 0;
-        background: white;
+        background: var(--surface);
         z-index: 1;
         padding-top: 0.3rem;
         padding-bottom: 0.3rem;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--border);
       }
     }
 
@@ -737,5 +739,18 @@
   </div>
 
   <script src="/app.js"></script>
+
+  <div class="corner-bar">
+    <button class="theme-btn" data-theme-item onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle dark mode">
+      <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+    </button>
+    <a href="https://github.com/machjn/vibeword" class="github-link" target="_blank" rel="noopener">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
+      machjn/vibeword
+    </a>
+  </div>
 </body>
 </html>

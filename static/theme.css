@@ -1,0 +1,96 @@
+/* ── Light theme (default) ── */
+:root {
+  --bg:            #f5f5f0;
+  --surface:       #ffffff;
+  --surface-2:     #fafafa;
+  --surface-3:     #f0f0f0;
+  --surface-hover: #e8e8e8;
+  --border:        #e0e0e0;
+  --text:          #1a1a1a;
+  --text-2:        #444444;
+  --text-3:        #888888;
+  --text-4:        #bbbbbb;
+  --accent:        #3498db;
+  --accent-2:      #2980b9;
+  --accent-subtle: rgba(52,152,219,0.12);
+  --correct:       #27ae60;
+  --error:         #e74c3c;
+  --warning:       #e67e22;
+  --pencil:        #7f8c8d;
+  --toolbar:       #1a1a1a;
+  --toolbar-2:     #2a2a2a;
+  --toolbar-3:     #3a3a3a;
+  --grid-line:     #1a1a1a;
+  --shadow:        rgba(0,0,0,0.1);
+}
+
+/* ── Dark theme ── */
+html[data-theme="dark"] {
+  --bg:            #111111;
+  --surface:       #1e1e1e;
+  --surface-2:     #252525;
+  --surface-3:     #2e2e2e;
+  --surface-hover: #393939;
+  --border:        #404040;
+  --text:          #f0f0ee;
+  --text-2:        #cccccc;
+  --text-3:        #777777;
+  --text-4:        #555555;
+  --accent:        #3d9fd4;
+  --accent-2:      #5dade2;
+  --accent-subtle: rgba(61,159,212,0.18);
+  --correct:       #2ecc71;
+  --error:         #e74c3c;
+  --warning:       #e67e22;
+  --pencil:        #95a5a6;
+  --toolbar:       #0c0c0c;
+  --toolbar-2:     #161616;
+  --toolbar-3:     #262626;
+  --grid-line:     #3a3a3a;
+  --shadow:        rgba(0,0,0,0.35);
+}
+
+/* ── Bottom-left corner bar (theme toggle + GitHub link) ── */
+.corner-bar {
+  position: fixed;
+  bottom: 1.1rem;
+  left: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 10;
+}
+
+.github-link {
+  color: var(--text-3);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  transition: color 0.15s;
+}
+.github-link:hover { color: var(--text); }
+
+/* ── Theme toggle button (shared across pages) ── */
+.theme-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.25rem 0.4rem;
+  cursor: pointer;
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.theme-btn:hover { background: var(--surface-3); color: var(--text); }
+.theme-btn svg { width: 16px; height: 16px; }
+
+/* Show moon in light mode (click to go dark), sun in dark mode (click to go light) */
+.theme-sun  { display: none; }
+.theme-moon { display: block; }
+html[data-theme="dark"] .theme-sun  { display: block; }
+html[data-theme="dark"] .theme-moon { display: none; }

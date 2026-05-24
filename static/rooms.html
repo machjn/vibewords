@@ -4,21 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="/favicon.png">
+  <script src="/theme.js"></script>
+  <link rel="stylesheet" href="/theme.css">
   <title>Rooms — VibeWord</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f5f0;
+      background: var(--bg);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
     header {
-      background: white;
-      border-bottom: 1px solid #e0e0e0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
       padding: 0 1.5rem;
       height: 48px;
       display: flex;
@@ -27,13 +29,13 @@
       flex-shrink: 0;
     }
 
-    .logo { font-weight: 800; font-size: 1.1rem; color: #3498db; letter-spacing: -0.5px; text-decoration: none; }
+    .logo { font-weight: 800; font-size: 1.1rem; color: var(--accent); letter-spacing: -0.5px; text-decoration: none; }
 
-    .header-title { font-weight: 600; color: #1a1a1a; flex: 1; }
+    .header-title { font-weight: 600; color: var(--text); flex: 1; }
 
     .nav-link {
       font-size: 0.85rem;
-      color: #3498db;
+      color: var(--accent);
       text-decoration: none;
     }
     .nav-link:hover { text-decoration: underline; }
@@ -53,7 +55,7 @@
       margin-bottom: 1.25rem;
     }
 
-    h1 { font-size: 1.3rem; font-weight: 700; color: #1a1a1a; }
+    h1 { font-size: 1.3rem; font-weight: 700; color: var(--text); }
 
     .refresh-info { display: none; }
 
@@ -61,10 +63,10 @@
     .rooms-table {
       width: 100%;
       border-collapse: collapse;
-      background: white;
+      background: var(--surface);
       border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      box-shadow: 0 1px 4px var(--shadow);
     }
 
     .rooms-table th {
@@ -73,35 +75,35 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.07em;
-      color: #888;
+      color: var(--text-3);
       padding: 0.65rem 1rem;
-      background: #fafafa;
-      border-bottom: 1px solid #e8e8e8;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
     }
 
     .rooms-table td {
       padding: 0.75rem 1rem;
       font-size: 0.88rem;
-      color: #333;
-      border-bottom: 1px solid #f0f0f0;
+      color: var(--text-2);
+      border-bottom: 1px solid var(--border);
       vertical-align: middle;
     }
 
     .rooms-table tr:last-child td { border-bottom: none; }
 
-    .rooms-table tbody tr:hover td { background: #fafafa; }
+    .rooms-table tbody tr:hover td { background: var(--surface-2); }
 
-    .puzzle-title { font-weight: 600; color: #1a1a1a; }
-    .puzzle-author { font-size: 0.78rem; color: #999; margin-top: 1px; }
-    .puzzle-room-id { font-size: 0.75rem; color: #bbb; margin-top: 2px; font-family: ui-monospace, monospace; }
+    .puzzle-title { font-weight: 600; color: var(--text); }
+    .puzzle-author { font-size: 0.78rem; color: var(--text-3); margin-top: 1px; }
+    .puzzle-room-id { font-size: 0.75rem; color: var(--text-4); margin-top: 2px; font-family: ui-monospace, monospace; }
 
     .size-badge {
       display: inline-block;
       padding: 0.15rem 0.45rem;
-      background: #f0f0f0;
+      background: var(--surface-3);
       border-radius: 4px;
       font-size: 0.78rem;
-      color: #666;
+      color: var(--text-3);
       white-space: nowrap;
     }
 
@@ -112,10 +114,10 @@
       align-items: center;
       gap: 0.3rem;
       padding: 0.15rem 0.45rem;
-      background: #f5f5f5;
+      background: var(--surface-3);
       border-radius: 10px;
       font-size: 0.78rem;
-      color: #444;
+      color: var(--text-2);
     }
 
     .player-dot {
@@ -125,13 +127,13 @@
       flex-shrink: 0;
     }
 
-    .no-players { color: #bbb; font-style: italic; font-size: 0.82rem; }
+    .no-players { color: var(--text-4); font-style: italic; font-size: 0.82rem; }
 
-    .age { color: #999; font-size: 0.82rem; white-space: nowrap; }
+    .age { color: var(--text-3); font-size: 0.82rem; white-space: nowrap; }
 
     .join-btn {
       padding: 0.3rem 0.8rem;
-      background: #3498db;
+      background: var(--accent);
       color: white;
       border: none;
       border-radius: 5px;
@@ -144,16 +146,16 @@
       white-space: nowrap;
       transition: background 0.15s;
     }
-    .join-btn:hover { background: #2980b9; }
+    .join-btn:hover { background: var(--accent-2); }
 
     /* ── Empty state ── */
     .empty {
-      background: white;
+      background: var(--surface);
       border-radius: 10px;
       padding: 3rem 2rem;
       text-align: center;
-      color: #999;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      color: var(--text-3);
+      box-shadow: 0 1px 4px var(--shadow);
     }
 
     .empty p { margin-bottom: 1rem; }
@@ -161,7 +163,7 @@
     .create-link {
       display: inline-block;
       padding: 0.5rem 1.2rem;
-      background: #3498db;
+      background: var(--accent);
       color: white;
       border-radius: 6px;
       text-decoration: none;
@@ -169,7 +171,7 @@
       font-size: 0.9rem;
       transition: background 0.15s;
     }
-    .create-link:hover { background: #2980b9; }
+    .create-link:hover { background: var(--accent-2); }
 
     /* ── Responsive ── */
     @media (max-width: 620px) {
@@ -296,5 +298,18 @@
     setInterval(load, REFRESH_INTERVAL);
     setInterval(updateRefreshInfo, 5_000);
   </script>
+
+  <div class="corner-bar">
+    <button class="theme-btn" data-theme-item onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle dark mode">
+      <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+    </button>
+    <a href="https://github.com/machjn/vibeword" class="github-link" target="_blank" rel="noopener">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
+      machjn/vibeword
+    </a>
+  </div>
 </body>
 </html>
