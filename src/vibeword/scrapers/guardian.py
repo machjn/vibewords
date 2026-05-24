@@ -282,9 +282,14 @@ def _build_clues(slots: list[Slot]) -> dict[str, list[list[Any]]]:
     return clues
 
 
-def _build_links(slots: list[Slot]) -> dict[str, dict[int, list[int]]]:
-    """Return a map {direction: {clue_num: [ordered chain of clue nums]}} for linked clues."""
-    links: dict[str, dict[int, list[int]]] = {"Across": {}, "Down": {}}
+def _build_links(slots: list[Slot]) -> dict[str, dict[int, list]]:
+    """Return a map {direction: {clue_num: chain}} for linked clues.
+
+    Each chain is an ordered list of [number, direction] pairs covering all
+    segments, supporting cross-direction compounds (e.g. 7 down continues as
+    27 across, then 30 across, then 1 down).
+    """
+    links: dict[str, dict[int, list]] = {"Across": {}, "Down": {}}
     id_to_slot = {s.id: s for s in slots}
     seen: set[tuple] = set()
 
@@ -299,15 +304,12 @@ def _build_links(slots: list[Slot]) -> dict[str, dict[int, list[int]]]:
         ordered = [id_to_slot[gid] for gid in slot.group if gid in id_to_slot]
         if len(ordered) <= 1:
             continue
-        # All entries in a group must share a direction for our purposes
-        dirs = {s.direction for s in ordered}
-        if len(dirs) != 1:
-            continue
 
-        chain = [s.number for s in ordered]
-        dir_key = ordered[0].direction
-        for num in chain:
-            links[dir_key][num] = chain
+        # Chain of [number, direction] pairs; cross-direction compounds are supported.
+        chain = [[s.number, s.direction] for s in ordered]
+        # Register every slot under its own direction key.
+        for s in ordered:
+            links[s.direction][s.number] = chain
 
     # Drop empty direction keys to keep the output tidy
     return {d: m for d, m in links.items() if m}

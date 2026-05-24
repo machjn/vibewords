@@ -251,10 +251,11 @@ function fitGridToScreen() {
 
 function updateWordCorrectness(r, c, dir) {
   if (!puzzle || !puzzle.solution) return;
-  const num = wordStartNumber(r, c, dir);
-  if (num == null) return;
+  const entry = wordStartEntry(r, c, dir);
+  if (!entry) return;
+  const { num, dir: primaryDir } = entry;
   const cells = wordCells(r, c, dir);
-  const wordKey = `${dir[0]}-${num}`;
+  const wordKey = `${primaryDir[0]}-${num}`;
   const correct = !revealedWords.has(wordKey) && cells.length > 0 && cells.every(([wr, wc]) => {
     const letter = grid[`${wr},${wc}`];
     if (!letter) return false;
@@ -266,8 +267,8 @@ function updateWordCorrectness(r, c, dir) {
     if (inp) inp.classList.toggle('word-correct', correct);
   });
   // Mark every clue item in the chain (primary + continuations).
-  getChain(num, dir).forEach(chainNum => {
-    const clueEl = document.getElementById(`clue-${dir[0]}-${chainNum}`);
+  chainEntries(getChain(num, primaryDir), primaryDir).forEach(({ num: chainNum, dir: chainDir }) => {
+    const clueEl = document.getElementById(`clue-${chainDir[0]}-${chainNum}`);
     if (clueEl) clueEl.classList.toggle('word-correct', correct);
   });
 }
@@ -277,9 +278,9 @@ function updateWordCorrectness(r, c, dir) {
 // but never added (that's checkWord/checkAll's job).
 function recheckWordCorrectness(r, c) {
   for (const dir of ['across', 'down']) {
-    const num = wordStartNumber(r, c, dir);
-    if (num == null) continue;
-    const clueEl = document.getElementById(`clue-${dir[0]}-${num}`);
+    const entry = wordStartEntry(r, c, dir);
+    if (!entry) continue;
+    const clueEl = document.getElementById(`clue-${entry.dir[0]}-${entry.num}`);
     if (clueEl && clueEl.classList.contains('word-correct')) {
       updateWordCorrectness(r, c, dir);
     }
@@ -436,39 +437,67 @@ function runCells(r, c, dir) {
 
 // All cells in the linked-clue chain that contains (r, c) in direction dir,
 // ordered as the answer should be filled in.  Falls back to runCells for
-// ordinary (non-linked) clues.
+// ordinary (non-linked) clues.  Handles cross-direction chains (e.g. a clue
+// that continues as an Across segment then back to Down).
 function wordCells(r, c, dir) {
+  return wordCellsTagged(r, c, dir).map(([wr, wc]) => [wr, wc]);
+}
+
+// Like wordCells but each entry is [row, col, segDir] so callers can use the
+// correct navigation direction when moving into a different segment.
+function wordCellsTagged(r, c, dir) {
   const run = runCells(r, c, dir);
-  if (!run.length) return run;
+  if (!run.length) return run.map(([wr, wc]) => [wr, wc, dir]);
   const startNum = puzzle.cells[run[0][0]][run[0][1]].number;
-  if (!startNum) return run;
+  if (!startNum) return run.map(([wr, wc]) => [wr, wc, dir]);
   const chain = getChain(startNum, dir);
-  if (chain.length <= 1) return run;
+  if (chain.length <= 1) return run.map(([wr, wc]) => [wr, wc, dir]);
   const all = [];
-  for (const num of chain) {
+  for (const { num, dir: segDir } of chainEntries(chain, dir)) {
     const pos = findClueStart(num);
-    if (pos) all.push(...runCells(pos.row, pos.col, dir));
+    if (pos) for (const [wr, wc] of runCells(pos.row, pos.col, segDir)) all.push([wr, wc, segDir]);
   }
   return all;
 }
 
 function wordLength(r, c, dir) { return wordCells(r, c, dir).length; }
 
-// Returns the clue number of the first run in the chain (the display number).
-function wordStartNumber(r, c, dir) {
+// Returns the ordered chain for a clue, or a singleton if not linked.
+// Each chain entry is either [num, dirKey] (new format, supports cross-direction)
+// or a plain number (legacy same-direction format).
+function getChain(num, dir) {
+  if (!puzzle.links) return [num];
+  const dirKey = dir === 'across' ? 'Across' : 'Down';
+  return (puzzle.links[dirKey] || {})[num] || [num];
+}
+
+// Normalises a chain into [{num, dir}] objects regardless of format.
+function chainEntries(chain, fallbackDir) {
+  return chain.map(entry =>
+    Array.isArray(entry)
+      ? { num: entry[0], dir: entry[1] === 'Across' ? 'across' : 'down' }
+      : { num: entry, dir: fallbackDir }
+  );
+}
+
+// Returns {num, dir} of the head of the chain containing (r,c) in direction dir,
+// or null if the cell has no clue start.
+function wordStartEntry(r, c, dir) {
   const run = runCells(r, c, dir);
   if (!run.length) return null;
   const startNum = puzzle.cells[run[0][0]][run[0][1]].number;
   if (!startNum) return null;
   const chain = getChain(startNum, dir);
-  return chain[0];  // head of chain is the primary clue number
+  const first = chain[0];
+  return Array.isArray(first)
+    ? { num: first[0], dir: first[1] === 'Across' ? 'across' : 'down' }
+    : { num: first, dir };
 }
 
-// Returns the ordered chain [num, …] for a clue, or [num] if not linked.
-function getChain(num, dir) {
-  if (!puzzle.links) return [num];
-  const dirKey = dir === 'across' ? 'Across' : 'Down';
-  return (puzzle.links[dirKey] || {})[num] || [num];
+// Returns the clue number of the first run in the chain (the display number).
+function wordStartNumber(r, c, dir) {
+  const entry = wordStartEntry(r, c, dir);
+  return entry ? entry.num : null;
 }
 
 // Returns {row, col} of the cell numbered `num`, or null.
@@ -544,22 +573,22 @@ function handleBackspace(r, c) {
   if (grid[key] || pencilGrid[key]) {
     commitCell(r, c, '');
   } else {
-    const cells = wordCells(r, c, sel.dir);
+    const cells = wordCellsTagged(r, c, sel.dir);
     const idx = cells.findIndex(([wr, wc]) => wr === r && wc === c);
     if (idx > 0) {
-      const [pr, pc] = cells[idx - 1];
+      const [pr, pc, prevDir] = cells[idx - 1];
       commitCell(pr, pc, '');
-      selectCell(pr, pc, sel.dir);
+      selectCell(pr, pc, prevDir);
     }
   }
 }
 
 function advance(r, c, dir) {
-  const cells = wordCells(r, c, dir);
+  const cells = wordCellsTagged(r, c, dir);
   const idx = cells.findIndex(([wr, wc]) => wr === r && wc === c);
   if (idx !== -1 && idx < cells.length - 1) {
-    const [nr, nc] = cells[idx + 1];
-    selectCell(nr, nc, dir);
+    const [nr, nc, nextDir] = cells[idx + 1];
+    selectCell(nr, nc, nextDir);
   }
 }
 
@@ -597,14 +626,20 @@ function allWords() {
   const words = [];
   puzzle.clues.across.forEach(cl => {
     // Skip continuation entries — Tab only visits the chain head.
-    if (getChain(cl.number, 'across')[0] !== cl.number) return;
+    const first = getChain(cl.number, 'across')[0];
+    const headNum = Array.isArray(first) ? first[0] : first;
+    if (headNum !== cl.number) return;
+    const headDir = Array.isArray(first) ? (first[1] === 'Across' ? 'across' : 'down') : 'across';
     const pos = findClueStart(cl.number);
-    if (pos) words.push({ row: pos.row, col: pos.col, dir: 'across' });
+    if (pos) words.push({ row: pos.row, col: pos.col, dir: headDir });
   });
   puzzle.clues.down.forEach(cl => {
-    if (getChain(cl.number, 'down')[0] !== cl.number) return;
+    const first = getChain(cl.number, 'down')[0];
+    const headNum = Array.isArray(first) ? first[0] : first;
+    if (headNum !== cl.number) return;
+    const headDir = Array.isArray(first) ? (first[1] === 'Across' ? 'across' : 'down') : 'down';
     const pos = findClueStart(cl.number);
-    if (pos) words.push({ row: pos.row, col: pos.col, dir: 'down' });
+    if (pos) words.push({ row: pos.row, col: pos.col, dir: headDir });
   });
   return words;
 }
@@ -631,9 +666,11 @@ function prevWord() {
 
 function jumpToClue(number, dir) {
   // Always jump to the head of the chain so selection starts at the first run.
-  const head = getChain(number, dir)[0];
-  const pos = findClueStart(head);
-  if (pos) selectCell(pos.row, pos.col, dir);
+  const first = getChain(number, dir)[0];
+  const headNum = Array.isArray(first) ? first[0] : first;
+  const headDir = Array.isArray(first) ? (first[1] === 'Across' ? 'across' : 'down') : dir;
+  const pos = findClueStart(headNum);
+  if (pos) selectCell(pos.row, pos.col, headDir);
 }
 
 // ── Clue panel ─────────────────────────────────────────────────────────────
@@ -650,10 +687,11 @@ function updateOtherPlayersClues() {
   for (const [userId, user] of Object.entries(users)) {
     if (!user.cursor) continue;
     const { row, col, direction } = user.cursor;
-    const num = wordStartNumber(row, col, direction);
-    if (num == null) continue;
-    getChain(num, direction).forEach(chainNum => {
-      const clueEl = document.getElementById(`clue-${direction[0]}-${chainNum}`);
+    const entry = wordStartEntry(row, col, direction);
+    if (!entry) continue;
+    const { num, dir: primaryDir } = entry;
+    chainEntries(getChain(num, primaryDir), primaryDir).forEach(({ num: chainNum, dir: chainDir }) => {
+      const clueEl = document.getElementById(`clue-${chainDir[0]}-${chainNum}`);
       if (!clueEl || clueEl.classList.contains('active')) return;
       clueEl.style.background = hexToRgba(user.color, 0.12);
       clueEl.style.borderLeftColor = hexToRgba(user.color, 0.5);
@@ -663,11 +701,12 @@ function updateOtherPlayersClues() {
 }
 
 function updateActiveClue(r, c, dir) {
-  const num = wordStartNumber(r, c, dir);
-  if (num == null) return;
+  const entry = wordStartEntry(r, c, dir);
+  if (!entry) return;
+  const { num, dir: primaryDir } = entry;
   // Highlight every clue item in the chain (primary + continuations).
-  getChain(num, dir).forEach(chainNum => {
-    const clueEl = document.getElementById(`clue-${dir[0]}-${chainNum}`);
+  chainEntries(getChain(num, primaryDir), primaryDir).forEach(({ num: chainNum, dir: chainDir }) => {
+    const clueEl = document.getElementById(`clue-${chainDir[0]}-${chainNum}`);
     if (!clueEl) return;
     clueEl.classList.add('active');
     if (myColor) {
@@ -676,11 +715,11 @@ function updateActiveClue(r, c, dir) {
     }
   });
   // Scroll the primary clue into view.
-  const primaryEl = document.getElementById(`clue-${dir[0]}-${num}`);
+  const primaryEl = document.getElementById(`clue-${primaryDir[0]}-${num}`);
   if (primaryEl) primaryEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  const clueList = dir === 'across' ? puzzle.clues.across : puzzle.clues.down;
+  const clueList = primaryDir === 'across' ? puzzle.clues.across : puzzle.clues.down;
   const clue = clueList.find(cl => cl.number === num);
-  const dirLabel = dir === 'across' ? 'Across' : 'Down';
+  const dirLabel = primaryDir === 'across' ? 'Across' : 'Down';
   const numLabel = clue ? (clue.label || String(clue.number)) : String(num);
   document.getElementById('clue-display').textContent = clue ? `${numLabel} ${dirLabel}: ${clue.text}` : '';
 }
@@ -697,8 +736,8 @@ function toggleClueDisplay() {
 
 function revealLetter() {
   if (!puzzle.solution || sel.row < 0) return;
-  const num = wordStartNumber(sel.row, sel.col, sel.dir);
-  if (num != null) revealedWords.add(`${sel.dir[0]}-${num}`);
+  const entry = wordStartEntry(sel.row, sel.col, sel.dir);
+  if (entry) revealedWords.add(`${entry.dir[0]}-${entry.num}`);
   const { row, col } = sel;
   const letter = ((puzzle.solution[row] || [])[col] || '').toUpperCase();
   if (letter && letter !== '#') commitCell(row, col, letter, { isPencil: false, isRevealed: true });
@@ -706,8 +745,8 @@ function revealLetter() {
 
 function revealWord() {
   if (!puzzle.solution || sel.row < 0) return;
-  const num = wordStartNumber(sel.row, sel.col, sel.dir);
-  if (num != null) revealedWords.add(`${sel.dir[0]}-${num}`);
+  const entry = wordStartEntry(sel.row, sel.col, sel.dir);
+  if (entry) revealedWords.add(`${entry.dir[0]}-${entry.num}`);
   wordCells(sel.row, sel.col, sel.dir).forEach(([r, c]) => {
     const letter = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
     if (letter && letter !== '#') commitCell(r, c, letter, { isPencil: false, isRevealed: true });
