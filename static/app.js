@@ -690,7 +690,6 @@ function toggleClueDisplay() {
   const btn = document.getElementById('clue-btn');
   const visible = bar.classList.toggle('visible');
   btn.classList.toggle('active', visible);
-  btn.textContent = visible ? 'Clue: On' : 'Clue: Off';
   localStorage.setItem('vw-clue-bar', visible ? '1' : '');
 }
 
@@ -832,14 +831,12 @@ function togglePencil() {
   pencilMode = !pencilMode;
   const btn = document.getElementById('pencil-btn');
   btn.classList.toggle('active', pencilMode);
-  btn.textContent = pencilMode ? '✏ Pencil' : 'Pen';
 }
 
 function toggleOthers() {
   showOthers = !showOthers;
   const btn = document.getElementById('others-btn');
   btn.classList.toggle('active', showOthers);
-  btn.textContent = showOthers ? 'Others: On' : 'Others: Off';
 
   if (!showOthers) {
     Object.keys(users).forEach(clearUserSelection);
@@ -857,7 +854,6 @@ function togglePencilVisibility() {
   const btn  = document.getElementById('show-pencil-btn');
   const hidden = grid.classList.toggle('hide-pencil');
   btn.classList.toggle('active', !hidden);
-  btn.textContent = hidden ? 'Marks: Off' : 'Marks: On';
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -980,7 +976,7 @@ function applyStreamMode(on) {
   const wrap = document.getElementById('clue-sections-wrap');
   const btn  = document.getElementById('clue-mode-btn');
   wrap.classList.toggle('stream-mode', on);
-  btn.textContent = on ? 'Clues: Columns' : 'Clues: Rows';
+  btn.classList.toggle('active', on);
   if (on) localStorage.setItem('vw-stream', '1');
   else    localStorage.removeItem('vw-stream');
   const active = document.querySelector('.clue-item.active');
@@ -997,7 +993,6 @@ if (localStorage.getItem('vw-stream')) applyStreamMode(true);
 // Clue bar defaults to visible; only hide if user explicitly turned it off
 if (localStorage.getItem('vw-clue-bar') === '') {
   document.getElementById('clue-btn').classList.remove('active');
-  document.getElementById('clue-btn').textContent = 'Clue: Off';
 } else {
   document.getElementById('clue-display').classList.add('visible');
 }

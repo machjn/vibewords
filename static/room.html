@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/favicon.png">
   <title>VibeWord</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -174,10 +175,16 @@
     #show-pencil-btn.active:hover { background: #27ae60; border-color: #27ae60; }
     #others-btn.active { background: #2ecc71; border-color: #2ecc71; }
     #others-btn.active:hover { background: #27ae60; border-color: #27ae60; }
-    #clue-mode-btn { background: #e67e22; border-color: #e67e22; }
-    #clue-mode-btn:hover { background: #d35400; border-color: #d35400; }
     #export-btn { background: #5dade2; border-color: #5dade2; }
     #export-btn:hover { background: #3498db; border-color: #3498db; }
+
+    .btn-sep {
+      width: 1px;
+      align-self: stretch;
+      background: rgba(255,255,255,0.2);
+      flex-shrink: 0;
+      margin: 0 0.1rem;
+    }
 
     /* Pass cursor events through inputs while RMB is held so the body cursor shows */
     body.rmb-active .cell input { pointer-events: none; }
@@ -438,16 +445,19 @@
   </header>
 
   <div id="clue-banner">
-    <button class="action-btn active" id="clue-btn" title="Show or hide the active clue">Clue: On</button>
-    <button class="action-btn" id="pencil-btn" title="Toggle between pen and pencil mode">Pen</button>
-    <button class="action-btn active" id="show-pencil-btn" title="Show or hide pencil marks">Marks: On</button>
-    <button class="action-btn active" id="others-btn" title="Show or hide other players">Others: On</button>
-    <button class="action-btn" id="reveal-letter-btn" disabled title="Reveal the letter in the selected cell">Reveal Letter</button>
-    <button class="action-btn" id="reveal-word-btn" disabled title="Reveal all letters in the selected word">Reveal Word</button>
+    <button class="action-btn" id="reveal-letter-btn" disabled title="Reveal the letter in the selected cell">Reveal letter</button>
+    <button class="action-btn" id="reveal-word-btn" disabled title="Reveal all letters in the selected word">Reveal word</button>
     <button class="action-btn" id="check-btn" disabled title="Remove wrong letters in the selected word">Check</button>
-    <button class="action-btn" id="check-all-btn" disabled title="Remove all wrong letters in the grid">Check All</button>
+    <button class="action-btn" id="check-all-btn" disabled title="Remove all wrong letters in the grid">Check all</button>
     <button class="action-btn" id="clear-btn" disabled title="Clear non-crossing letters in the selected word">Clear</button>
-    <button class="action-btn" id="clue-mode-btn" title="Toggle clue layout">Clues: Rows</button>
+    <span class="btn-sep"></span>
+    <button class="action-btn active" id="clue-btn" title="Show or hide the active clue">Clue</button>
+    <button class="action-btn active" id="show-pencil-btn" title="Show or hide pencil marks">Marks</button>
+    <button class="action-btn active" id="others-btn" title="Show or hide other players">Others</button>
+    <button class="action-btn" id="clue-mode-btn" title="Toggle clue layout between rows and columns">Columns</button>
+    <span class="btn-sep"></span>
+    <button class="action-btn" id="pencil-btn" title="Toggle between pen and pencil mode">Pencil</button>
+    <span class="btn-sep"></span>
     <button class="action-btn" id="export-btn" title="Export current progress as .ipuz">&#11015; Export</button>
   </div>
 
