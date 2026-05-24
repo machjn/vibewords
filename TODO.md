@@ -1,11 +1,11 @@
 # To do
 
 Minor:
-- favicon
+- favicon /
 - clean up old rooms
 - show room id in rooms list
 - fix buttons changing size on toggle due to text label length
-- better organize buttons
+- better organize buttons /
 - logo
 - deploy as github actions rather than manually
 - add temporary auth layer? if needed
@@ -13,21 +13,19 @@ Minor:
 - make clue area wider by default
 - address the scaling discrepancies at laptop/desktop sizes
 - pen/pencil toggle button could be icons rather than text?
-- copy link -> copy room link
-- room connection indictator should be right most, should display some text like connected/disconnected on mouseover
-- room should be a button-like element with text "Room <room id>", and the indicator inside. clicking on it creates a small submenu that lets you copy the link to the current room and also provides a link to the rooms page.
-- on landing page, URL shouldn't be guardian-specific, we should just list supported connectors
+- copy link -> copy room link /
+- room connection indictator should be right most, should display some text like connected/disconnected on mouseover /
+- room should be a button-like element with text "Room <room id>", and the indicator inside. clicking on it creates a small submenu that lets you copy the link to the current room and also provides a link to the rooms page. /
+- on landing page, URL shouldn't be guardian-specific, we should just list supported connectors /
 - test proper error handling in case of malformed ipuz file etc.
 - assess exposure to injection attacks?
 - add some tests for scrapers etc.
 - the landing page could be clearer i.e. 'create a room' section. Browse rooms should be at the top.
-- issue with composite clues in e.g. Cryptic crossword No 30,013 (fixed)
+- issue with composite clues in e.g. Cryptic crossword No 30,013 (fixed) /
 - export should be implemented on the backend rather than the frontend, on the Puzzle object, so it can be reused by other components
-- probably should in the long-term have the fifteen-squared scraper gather all the data it can (i.e. including answers and clues), then have the grid reconstructor extract from that only the data it needs to reconstruct the grid
-- put the pieces together: use the reconstructed grid and the clues/answers to construct a full puzzle object from fifteensquared. then add a script which does this and exports it to ipuz
-- about page, link to github
-- find link to 15 squared for the puzzle?
-- show author 
+- about page, link to github /
+- find link to 15 squared for the puzzle? /
+- show author /
 
 Major:
 - Add other scrapers
@@ -41,6 +39,8 @@ Ideas:
 - scrape all publically available crosswords into ipuz format and archive?
 - can we reverse engineer a grid from a list clues?
 - gamify - add points
+- probably should in the long-term have the fifteen-squared scraper gather all the data it can (i.e. including answers and clues), then have the grid reconstructor extract from that only the data it needs to reconstruct the grid
+- put the pieces together: use the reconstructed grid and the clues/answers to construct a full puzzle object from fifteensquared. then add a script which does this and exports it to ipuz
 
 ## Reverse Engineering Grids
 
@@ -70,11 +70,11 @@ Grid constraints:
 
 ## playtest 1 feedback
 
-- indicate which player you are
-- do not collapse names
-- colours aren't cycled properly?
-- checks only working clientside
-- link to the original crossword
+- indicate which player you are /
+- do not collapse names /
+- colours aren't cycled properly? /
+- checks only working clientside /
+- link to the original crossword /
 - bug with No. 1,891 by Filbert Independent parsing, Sunday 24th May Cryptic
 - mousing over columns button causes it to lose colour?
-- should be more obvious how to change name
+- should be more obvious how to change name /

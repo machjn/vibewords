@@ -100,6 +100,9 @@ function handleMessage(msg) {
           showUserSelection(u.user_id, u.color, u.cursor.row, u.cursor.col, u.cursor.direction);
       });
       document.getElementById('puzzle-title').textContent = puzzle.title || 'Untitled';
+      const authorEl = document.getElementById('puzzle-author');
+      authorEl.textContent = puzzle.author ? `By ${puzzle.author}` : '';
+      authorEl.style.display = puzzle.author ? '' : 'none';
       const srcLink = document.getElementById('source-link');
       if (puzzle.source_url) {
         srcLink.href = puzzle.source_url;

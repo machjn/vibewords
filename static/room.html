@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&display=swap">
   <title>VibeWord</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -61,6 +62,14 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    #puzzle-author {
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: #333;
+      text-align: center;
+      margin-top: 0.5rem;
     }
 
     #status-dot {
@@ -295,6 +304,7 @@
     /* Inner wrapper handles centering without breaking scroll */
     .grid-centering {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100%;
@@ -552,6 +562,7 @@
     <div class="grid-area">
       <div class="grid-centering">
         <div id="crossword-grid"></div>
+        <div id="puzzle-author"></div>
       </div>
     </div>
 
