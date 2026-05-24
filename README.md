@@ -58,19 +58,19 @@ docker build . -t europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword:0.1.0
 docker push europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword:0.1.0
 ```
 
-Deploy to GCP:
-
-Either via the console or:
+Deploy to GCP, either via the console or:
 
 ```bash
 gcloud run deploy vibeword \
-  --image gcr.io/YOUR_PROJECT/vibeword \
+  --image europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword:0.2.0 \
   --platform managed \
-  --region europe-west1 \
+  --region europe-west2 \
   --timeout 3600 \
-  --allow-unauthenticated
+  --allow-unauthenticated \
+  --min-instances=1 \
+  --max-instances=1
 ```
 
-`--timeout 3600` is required — WebSocket connections count as a single HTTP request and will be dropped at the default 60 s limit.
+`--timeout 3600` is required — WebSocket connections count as a single HTTP request and will be dropped at the default 60 s limit. Can't set higher than 3600.
 
 If you scale beyond one instance, add `--session-affinity` so WebSocket connections aren't load-balanced across instances (room state is in-memory and not shared).

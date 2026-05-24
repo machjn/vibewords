@@ -30,18 +30,20 @@ Major:
 - Add other scrapers
 - store state in db rather than memory
 - add application awareness of IAP identity, so that we can have admin users who can delete rooms, infer names etc.
+- support mobile?
 
 Ideas:
 - add crossword editor?
 - add solver tools like anagram helper
 - scrape all publically available crosswords into ipuz format and archive?
 - can we reverse engineer a grid from a list clues?
+- gamify - add points
 
 ## Reverse Engineering Grids
 
 I want to develop an algorithm that takes a list of crossword clues and their lengths, and spits out the grid. I'm not confident this is always even possible. I'd like to try however.
 
-First, we need to boil down our list of clues into input expressing only the relevant information. The textual clues themselves be discarded, we can consider our input to be a list of tuples (word index, direction, length). The hope is that these describe a grid. But they may not.
+First, we need to boil down our list of clues into input expressing only the relevant information. The textual clues themselves can be discarded, we can consider our input to be a list of tuples (word index, direction, length). The hope is that these describe a unique grid. But they may not.
 
 A grid is basically an NxN matrix of binary values, each representing a cell that is either black or white, (1 or 0). There is an ordering on these cells, namely left to right, top to bottom. Explicitly, for cell in position (x,y) in an n-size grid, its cell index C in the ordering is C(x,y)=ny+x
 
@@ -62,3 +64,14 @@ Grid constraints:
 - Double unches should never appear at the start or end of a word
 - words are of minimum length 3 (but this information of course is contained in the input)
 - at least half the letters of a word should be checked.
+
+## playtest 1 feedback
+
+- indicate which player you are
+- do not collapse names
+- colours aren't cycled properly?
+- checks only working clientside
+- link to the original crossword
+- bug with No. 1,891 by Filbert Independent parsing, Sunday 24th May Cryptic
+- mousing over columns button causes it to lose colour?
+- should be more obvious how to change name

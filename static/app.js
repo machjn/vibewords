@@ -12,7 +12,7 @@ let users = {};        // user_id -> { color, name, cursor }
 let sel = { row: -1, col: -1, dir: 'across' };
 let pencilMode = false;
 let showOthers = true;
-let revealedWords = new Set(); // "a-5" / "d-12" — words the local player revealed
+let verifiedClues = new Set(); // "a-5" / "d-12" — words confirmed correct (shared via server)
 
 // ── Identity persistence ───────────────────────────────────────────────────
 
@@ -85,6 +85,7 @@ function handleMessage(msg) {
       grid        = msg.grid || {};
       pencilGrid  = msg.pencil_grid || {};
       revealedCells = new Set(msg.revealed || []);
+      verifiedClues = new Set(msg.verified_clues || []);
       msg.users.forEach(u => {
         if (u.user_id !== myUserId)
           users[u.user_id] = { color: u.color, name: u.name, cursor: u.cursor };
@@ -92,6 +93,7 @@ function handleMessage(msg) {
       renderPuzzle();
       renderClues();
       applyGrid();
+      verifiedClues.forEach(key => _renderVerifiedClue(key));
       msg.users.forEach(u => {
         if (u.user_id !== myUserId && u.cursor)
           showUserSelection(u.user_id, u.color, u.cursor.row, u.cursor.col, u.cursor.direction);
@@ -155,6 +157,10 @@ function handleMessage(msg) {
 
     case 'pointer_clear':
       _clearPointer(msg.user_id);
+      break;
+
+    case 'clue_verified':
+      verifyClue(msg.key);
       break;
   }
 }
@@ -249,41 +255,73 @@ function fitGridToScreen() {
 
 // ── Cell display ───────────────────────────────────────────────────────────
 
-function updateWordCorrectness(r, c, dir) {
-  if (!puzzle || !puzzle.solution) return;
-  const entry = wordStartEntry(r, c, dir);
-  if (!entry) return;
-  const { num, dir: primaryDir } = entry;
-  const cells = wordCells(r, c, dir);
-  const wordKey = `${primaryDir[0]}-${num}`;
-  const correct = !revealedWords.has(wordKey) && cells.length > 0 && cells.every(([wr, wc]) => {
-    const letter = grid[`${wr},${wc}`];
+// ── Verified-clue helpers ──────────────────────────────────────────────────
+
+function _parseClueKey(key) {
+  const dash = key.indexOf('-');
+  return { dir: key[0] === 'a' ? 'across' : 'down', num: parseInt(key.slice(dash + 1)) };
+}
+
+function _wordAllCorrect(cells) {
+  if (!cells.length) return false;
+  return cells.every(([r, c]) => {
+    const letter = grid[`${r},${c}`];
     if (!letter) return false;
-    const sol = ((puzzle.solution[wr] || [])[wc] || '').toUpperCase();
+    const sol = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
     return !!sol && sol !== '#' && letter === sol;
-  });
-  cells.forEach(([wr, wc]) => {
-    const inp = getInput(wr, wc);
-    if (inp) inp.classList.toggle('word-correct', correct);
-  });
-  // Mark every clue item in the chain (primary + continuations).
-  chainEntries(getChain(num, primaryDir), primaryDir).forEach(({ num: chainNum, dir: chainDir }) => {
-    const clueEl = document.getElementById(`clue-${chainDir[0]}-${chainNum}`);
-    if (clueEl) clueEl.classList.toggle('word-correct', correct);
   });
 }
 
-// Re-evaluates correctness only for words already marked green.
-// Called on any cell change so green is withdrawn if the word becomes wrong,
-// but never added (that's checkWord/checkAll's job).
+function _wordHasRevealedCell(cells) {
+  return cells.some(([r, c]) => revealedCells.has(`${r},${c}`));
+}
+
+// Re-compute word-correct for one cell based on verifiedClues (used for crossing words).
+function updateCellVerifiedDisplay(r, c) {
+  const inp = getInput(r, c);
+  if (!inp) return;
+  let green = false;
+  for (const dir of ['across', 'down']) {
+    const entry = wordStartEntry(r, c, dir);
+    if (entry && verifiedClues.has(`${entry.dir[0]}-${entry.num}`)) { green = true; break; }
+  }
+  inp.classList.toggle('word-correct', green);
+}
+
+// Apply/remove word-correct CSS for a clue key based on current verifiedClues.
+function _renderVerifiedClue(key) {
+  const { dir, num } = _parseClueKey(key);
+  const pos = findClueStart(num);
+  if (!pos) return;
+  const verified = verifiedClues.has(key);
+  chainEntries(getChain(num, dir), dir).forEach(({ num: chainNum, dir: chainDir }) => {
+    const clueEl = document.getElementById(`clue-${chainDir[0]}-${chainNum}`);
+    if (clueEl) clueEl.classList.toggle('word-correct', verified);
+  });
+  wordCells(pos.row, pos.col, dir).forEach(([r, c]) => updateCellVerifiedDisplay(r, c));
+}
+
+function verifyClue(key) {
+  verifiedClues.add(key);
+  _renderVerifiedClue(key);
+}
+
+function unverifyClue(key) {
+  verifiedClues.delete(key);
+  _renderVerifiedClue(key);
+}
+
+// Withdraws verification for any verified word containing (r,c) that is no longer correct.
+// Called on any cell change; never adds green (that's checkWord/checkAll's job).
 function recheckWordCorrectness(r, c) {
+  if (!puzzle || !puzzle.solution) return;
   for (const dir of ['across', 'down']) {
     const entry = wordStartEntry(r, c, dir);
     if (!entry) continue;
-    const clueEl = document.getElementById(`clue-${entry.dir[0]}-${entry.num}`);
-    if (clueEl && clueEl.classList.contains('word-correct')) {
-      updateWordCorrectness(r, c, dir);
-    }
+    const wordKey = `${entry.dir[0]}-${entry.num}`;
+    if (!verifiedClues.has(wordKey)) continue;
+    const cells = wordCells(r, c, dir);
+    if (_wordHasRevealedCell(cells) || !_wordAllCorrect(cells)) unverifyClue(wordKey);
   }
 }
 
@@ -736,8 +774,6 @@ function toggleClueDisplay() {
 
 function revealLetter() {
   if (!puzzle.solution || sel.row < 0) return;
-  const entry = wordStartEntry(sel.row, sel.col, sel.dir);
-  if (entry) revealedWords.add(`${entry.dir[0]}-${entry.num}`);
   const { row, col } = sel;
   const letter = ((puzzle.solution[row] || [])[col] || '').toUpperCase();
   if (letter && letter !== '#') commitCell(row, col, letter, { isPencil: false, isRevealed: true });
@@ -745,8 +781,6 @@ function revealLetter() {
 
 function revealWord() {
   if (!puzzle.solution || sel.row < 0) return;
-  const entry = wordStartEntry(sel.row, sel.col, sel.dir);
-  if (entry) revealedWords.add(`${entry.dir[0]}-${entry.num}`);
   wordCells(sel.row, sel.col, sel.dir).forEach(([r, c]) => {
     const letter = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
     if (letter && letter !== '#') commitCell(r, c, letter, { isPencil: false, isRevealed: true });
@@ -761,10 +795,17 @@ function checkWord() {
     const key = `${r},${c}`;
     const letter = pencilGrid[key] || grid[key];
     if (!letter) return;
-    const correct = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
-    if (correct && correct !== '#' && letter.toUpperCase() !== correct) commitCell(r, c, '');
+    const sol = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
+    if (sol && sol !== '#' && letter.toUpperCase() !== sol) commitCell(r, c, '');
   });
-  updateWordCorrectness(sel.row, sel.col, sel.dir);
+  const entry = wordStartEntry(sel.row, sel.col, sel.dir);
+  if (!entry) return;
+  const wordKey = `${entry.dir[0]}-${entry.num}`;
+  const cells = wordCells(sel.row, sel.col, sel.dir);
+  if (!_wordHasRevealedCell(cells) && _wordAllCorrect(cells)) {
+    verifyClue(wordKey);
+    send({ type: 'word_correct', key: wordKey });
+  }
 }
 
 function checkAll() {
@@ -775,16 +816,28 @@ function checkAll() {
       const key = `${r},${c}`;
       const letter = pencilGrid[key] || grid[key];
       if (!letter) continue;
-      const correct = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
-      if (correct && correct !== '#' && letter.toUpperCase() !== correct) commitCell(r, c, '');
+      const sol = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
+      if (sol && sol !== '#' && letter.toUpperCase() !== sol) commitCell(r, c, '');
     }
   }
-  for (let r = 0; r < puzzle.height; r++)
-    for (let c = 0; c < puzzle.width; c++)
-      if (!puzzle.cells[r][c].black) {
-        updateWordCorrectness(r, c, 'across');
-        updateWordCorrectness(r, c, 'down');
+  const toVerify = new Set();
+  for (let r = 0; r < puzzle.height; r++) {
+    for (let c = 0; c < puzzle.width; c++) {
+      if (puzzle.cells[r][c].black) continue;
+      for (const dir of ['across', 'down']) {
+        const entry = wordStartEntry(r, c, dir);
+        if (!entry) continue;
+        const wordKey = `${entry.dir[0]}-${entry.num}`;
+        if (toVerify.has(wordKey) || verifiedClues.has(wordKey)) continue;
+        const cells = wordCells(r, c, dir);
+        if (!_wordHasRevealedCell(cells) && _wordAllCorrect(cells)) toVerify.add(wordKey);
       }
+    }
+  }
+  toVerify.forEach(key => {
+    verifyClue(key);
+    send({ type: 'word_correct', key });
+  });
 }
 
 // ── Clear ──────────────────────────────────────────────────────────────────
