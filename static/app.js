@@ -1319,7 +1319,14 @@ function _showPicker(row, col, clientX, clientY) {
 
   svg.appendChild(g);
   document.body.appendChild(svg);
-  _pState = { svg, sectors, labels, centerText: cTxt, cx, cy, pr: Pr, prOuter: PR, row, col, activeIdx: -1 };
+
+  const barCells = wordCells(row, col, sel.dir);
+  const barTryY = cy + mid + 6;
+  const barY = barTryY + 44 > window.innerHeight ? cy - mid - 50 : barTryY;
+  const barEl = _createPickerBar(cx, barY, barCells);
+
+  _pState = { svg, sectors, labels, centerText: cTxt, cx, cy, pr: Pr, prOuter: PR, row, col, activeIdx: -1, touchedOuter: false, barEl };
+  _updatePickerBar();
 }
 
 function _updatePicker(clientX, clientY) {
@@ -1329,6 +1336,7 @@ function _updatePicker(clientX, clientY) {
 
   let newIdx = -1;
   if (dist >= _pState.pr) {
+    _pState.touchedOuter = true;
     let a = Math.atan2(dy, dx) + Math.PI / 2;
     if (a < 0) a += 2 * Math.PI;
     newIdx = Math.floor(a / (2 * Math.PI / 26)) % 26;
@@ -1342,31 +1350,92 @@ function _updatePicker(clientX, clientY) {
   _pState.labels.forEach((txt, i) => {
     txt.style.fill = i === newIdx ? 'var(--grid-bg,#fff)' : 'var(--text,#000)';
   });
-  _pState.centerText.textContent = newIdx >= 0 ? _PICK_LETTERS[newIdx] : '';
+  if (newIdx >= 0) {
+    _pState.centerText.textContent = _PICK_LETTERS[newIdx];
+    _pState.centerText.style.fill = 'var(--accent,#3498db)';
+  } else if (_pState.touchedOuter) {
+    _pState.centerText.textContent = '⌫';
+    _pState.centerText.style.fill = 'var(--text,#000)';
+  } else {
+    _pState.centerText.textContent = '';
+  }
+}
+
+function _createPickerBar(cx, barY, cells) {
+  if (cells.length < 2) return null;
+  const GAP = 3, HPAD = 14;
+  const maxInner = window.innerWidth * 0.88 - HPAD * 2;
+  const cellW = Math.max(14, Math.min(28, Math.floor((maxInner - GAP * (cells.length - 1)) / cells.length)));
+  const totalW = cellW * cells.length + GAP * (cells.length - 1) + HPAD * 2;
+  const left = Math.max(4, Math.min(window.innerWidth - totalW - 4, cx - totalW / 2));
+  const bar = document.createElement('div');
+  bar.style.cssText =
+    `position:fixed;left:${left}px;top:${barY}px;z-index:500;` +
+    `display:flex;gap:${GAP}px;padding:6px ${HPAD}px;` +
+    `background:var(--surface,#fff);border:1.5px solid var(--border,#ccc);` +
+    `border-radius:99px;box-shadow:0 2px 10px rgba(0,0,0,.3);` +
+    `touch-action:none;pointer-events:none;user-select:none`;
+  cells.forEach(([r, c]) => {
+    const span = document.createElement('span');
+    span.dataset.r = r;
+    span.dataset.c = c;
+    const fs = Math.max(11, cellW - 6);
+    span.style.cssText =
+      `width:${cellW}px;text-align:center;font-family:inherit;` +
+      `font-weight:700;font-size:${fs}px;line-height:1.6;` +
+      `border-bottom:2px solid var(--border,#ccc)`;
+    bar.appendChild(span);
+  });
+  document.body.appendChild(bar);
+  return bar;
+}
+
+function _updatePickerBar() {
+  if (!_pState?.barEl) return;
+  _pState.barEl.querySelectorAll('span').forEach(span => {
+    const r = +span.dataset.r, c = +span.dataset.c;
+    const key = `${r},${c}`;
+    const letter = grid[key] || pencilGrid[key] || '';
+    const isCurrent = r === _pState.row && c === _pState.col;
+    span.textContent = letter || '·';
+    span.style.color = isCurrent ? 'var(--accent,#3498db)' : (letter ? 'var(--text,#000)' : 'var(--border,#ccc)');
+    span.style.borderBottomColor = isCurrent ? 'var(--accent,#3498db)' : 'var(--border,#ccc)';
+  });
+}
+
+function _pickerReset(nextRow, nextCol) {
+  _pState.row = nextRow;
+  _pState.col = nextCol;
+  _pState.activeIdx = -1;
+  _pState.touchedOuter = false;
+  _pState.sectors.forEach(p => { p.style.fill = 'var(--surface,#fff)'; });
+  _pState.labels.forEach(t => { t.style.fill = 'var(--text,#000)'; });
+  _pState.centerText.textContent = '';
+  _updatePickerBar();
 }
 
 function _hidePicker(commit) {
   if (!_pState) return;
-  const { row, col, activeIdx } = _pState;
+  const { row, col, activeIdx, touchedOuter } = _pState;
 
   if (commit && activeIdx >= 0) {
     commitCell(row, col, _PICK_LETTERS[activeIdx]);
     advance(row, col, sel.dir);
     if (_consecutiveMode && (sel.row !== row || sel.col !== col)) {
-      // Keep the wheel open and stationary; just reset to the next cell.
-      _pState.row = sel.row;
-      _pState.col = sel.col;
-      _pState.activeIdx = -1;
-      _pState.sectors.forEach(p => { p.style.fill = 'var(--surface,#fff)'; });
-      _pState.labels.forEach(t => { t.style.fill = 'var(--text,#000)'; });
-      _pState.centerText.textContent = '';
+      _pickerReset(sel.row, sel.col);
       return;
     }
     _consecutiveMode = false;
+  } else if (commit && touchedOuter) {
+    // Dragged out then back to centre — backspace gesture.
+    handleBackspace(row, col);
+    _pickerReset(sel.row, sel.col);
+    return;
   } else {
     _consecutiveMode = false;
   }
 
+  if (_pState.barEl) _pState.barEl.remove();
   _pState.svg.remove();
   _pState = null;
 }
@@ -1384,7 +1453,7 @@ if (IS_COARSE) {
   // consecutive-mode touches regardless of what element Firefox routes them to
   // (SVG children can be targeted despite pointer-events:none on the parent).
   document.addEventListener('pointerdown', e => {
-    if (!_consecutiveMode || !_pState) return;
+    if (!_pState) return;
     const dist = Math.hypot(e.clientX - _pState.cx, e.clientY - _pState.cy);
     if (dist <= _pState.prOuter + 14) {
       // Inside the picker — grab the pointer for a pick gesture.
