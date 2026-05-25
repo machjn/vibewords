@@ -1225,24 +1225,29 @@ document.addEventListener('click', e => {
 // Active on coarse-pointer (touch) devices as a keyboard replacement.
 
 const _PICK_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const _PICK_R  = 128;  // outer ring radius (px)
-const _PICK_r  = 40;   // inner dead-zone radius (px)
-const _PICK_LR = 86;   // letter label radius (px)
+// Radii are fractions of the smaller viewport dimension so the picker
+// stays the same physical size regardless of browser zoom level.
+const _PICK_R_F  = 0.34;   // outer ring  (~128px on a 375px-wide phone)
+const _PICK_r_F  = 0.107;  // inner dead-zone (~40px)
+const _PICK_LR_F = 0.23;   // letter label placement (~86px)
 
-let _pState = null;   // { svg, sectors, labels, centerText, cx, cy, row, col, activeIdx }
+let _pState = null;   // { svg, sectors, labels, centerText, cx, cy, pr, row, col, activeIdx }
 let _ptrId  = null;   // active pointer ID
 
-function _pSectorPath(i) {
+function _pSectorPath(i, R, r) {
   const da = (2 * Math.PI) / 26;
   const a0 = -Math.PI / 2 + i * da, a1 = a0 + da;
   const [c0, s0, c1, s1] = [Math.cos(a0), Math.sin(a0), Math.cos(a1), Math.sin(a1)];
-  const R = _PICK_R, r = _PICK_r;
   return `M${r*c0} ${r*s0} L${R*c0} ${R*s0} A${R} ${R} 0 0 1 ${R*c1} ${R*s1} L${r*c1} ${r*s1} A${r} ${r} 0 0 0 ${r*c0} ${r*s0}Z`;
 }
 
 function _showPicker(row, col, clientX, clientY) {
   _hidePicker(false);
-  const margin = _PICK_R + 14;
+  const vmin = Math.min(window.innerWidth, window.innerHeight);
+  const PR  = Math.round(vmin * _PICK_R_F);
+  const Pr  = Math.round(vmin * _PICK_r_F);
+  const PLR = Math.round(vmin * _PICK_LR_F);
+  const margin = PR + 14;
   const cx = Math.min(Math.max(clientX, margin), window.innerWidth  - margin);
   const cy = Math.min(Math.max(clientY, margin), window.innerHeight - margin);
   const sz = margin * 2, mid = sz / 2;
@@ -1264,17 +1269,17 @@ function _showPicker(row, col, clientX, clientY) {
     const midA = -Math.PI / 2 + (i + 0.5) * (2 * Math.PI / 26);
 
     const path = document.createElementNS(NS, 'path');
-    path.setAttribute('d', _pSectorPath(i));
+    path.setAttribute('d', _pSectorPath(i, PR, Pr));
     path.style.cssText = 'fill:var(--surface,#fff);stroke:var(--border,#ccc);stroke-width:0.5';
     g.appendChild(path);
     sectors.push(path);
 
     const txt = document.createElementNS(NS, 'text');
-    txt.setAttribute('x', (_PICK_LR * Math.cos(midA)).toFixed(1));
-    txt.setAttribute('y', (_PICK_LR * Math.sin(midA)).toFixed(1));
+    txt.setAttribute('x', (PLR * Math.cos(midA)).toFixed(1));
+    txt.setAttribute('y', (PLR * Math.sin(midA)).toFixed(1));
     txt.setAttribute('text-anchor', 'middle');
     txt.setAttribute('dominant-baseline', 'central');
-    txt.setAttribute('font-size', '12');
+    txt.setAttribute('font-size', Math.round(vmin * 0.032));
     txt.setAttribute('font-weight', '700');
     txt.setAttribute('font-family', 'inherit');
     txt.style.cssText = 'fill:var(--text,#000);pointer-events:none';
@@ -1284,14 +1289,14 @@ function _showPicker(row, col, clientX, clientY) {
   }
 
   const circ = document.createElementNS(NS, 'circle');
-  circ.setAttribute('r', _PICK_r - 2);
+  circ.setAttribute('r', Pr - 2);
   circ.style.cssText = 'fill:var(--surface,#fff);stroke:var(--border,#ccc);stroke-width:1';
   g.appendChild(circ);
 
   const cTxt = document.createElementNS(NS, 'text');
   cTxt.setAttribute('text-anchor', 'middle');
   cTxt.setAttribute('dominant-baseline', 'central');
-  cTxt.setAttribute('font-size', '22');
+  cTxt.setAttribute('font-size', Math.round(vmin * 0.058));
   cTxt.setAttribute('font-weight', '900');
   cTxt.setAttribute('font-family', 'inherit');
   cTxt.style.fill = 'var(--accent,#3498db)';
@@ -1299,7 +1304,7 @@ function _showPicker(row, col, clientX, clientY) {
 
   svg.appendChild(g);
   document.body.appendChild(svg);
-  _pState = { svg, sectors, labels, centerText: cTxt, cx, cy, row, col, activeIdx: -1 };
+  _pState = { svg, sectors, labels, centerText: cTxt, cx, cy, pr: Pr, row, col, activeIdx: -1 };
 }
 
 function _updatePicker(clientX, clientY) {
@@ -1308,7 +1313,7 @@ function _updatePicker(clientX, clientY) {
   const dist = Math.hypot(dx, dy);
 
   let newIdx = -1;
-  if (dist >= _PICK_r) {
+  if (dist >= _pState.pr) {
     let a = Math.atan2(dy, dx) + Math.PI / 2;
     if (a < 0) a += 2 * Math.PI;
     newIdx = Math.floor(a / (2 * Math.PI / 26)) % 26;
