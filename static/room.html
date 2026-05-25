@@ -330,6 +330,7 @@
       border: 2px solid var(--grid-line);
       background: var(--grid-line);
       flex-shrink: 0;
+      touch-action: none;
     }
 
     .cell {
@@ -637,6 +638,16 @@
       .logo { font-size: 0; }
       .logo::after { content: 'VW'; font-size: 1.1rem; letter-spacing: -0.5px; }
       .players-summary .player-name { display: none; }
+    }
+
+    /* ── Radial letter picker (touch devices) ── */
+    @keyframes _picker-pop {
+      from { transform: scale(0.6); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    #radial-picker-svg {
+      transform-origin: center;
+      animation: _picker-pop 0.13s cubic-bezier(0.34, 1.4, 0.64, 1) both;
     }
 
     /* Collapse clue panel entirely on narrow screens; grid fills the view */

@@ -30,7 +30,7 @@ Minor:
 - fix mobile bug where calendar widget doesn't display Or is this just a firefox responsive design mode limitation/bug? /
 - bug where not all dots shown in chip. Couldn't reproduce
 - could have icons pen/pencil/hand modes, then select between the 3. Hand mode lets you select without opening keyboard
-- capture colour palette, create themes
+- capture colour palette, create themes /
 - background image on landing page?
 - show room timer in room dropdown?
 
@@ -39,6 +39,7 @@ Major:
 - store state in db rather than memory
 - add application awareness of IAP identity, so that we can have admin users who can delete rooms, infer names etc.
 - support mobile? /
+
 
 Ideas:
 - add crossword editor?
@@ -86,3 +87,26 @@ Grid constraints:
 - bug with No. 1,891 by Filbert Independent parsing, Sunday 24th May Cryptic
 - mousing over columns button causes it to lose colour?
 - should be more obvious how to change name /
+
+## mobile input feature
+
+### prompt 
+Quite a big task for you here, feel free to take your time, come up with a plan, do multiple iterations.
+
+I want it to be easier to input letters to a vibeword crossword grid on mobile. The main current issue is that selecting a cell opens the user's keyboard; on mobile screens this typically consumes the bottom 50% of the display. I think we can do better.
+
+I have an idea for how to approach this, but it's not fully thought out. The basic concept is that rather than opening a keyboard, the user presses and holds on a cell, and this spawns a radial UI widget with the 26 characters of the alphabet. The circle drawn by this widget is naturally divided into 26 sectors. Thus the further the user moves their finger radially from the centre point, the more precise they will be, as the width of the segment increases radially. 
+
+The first challenge is that we cannot necessarily draw circles at the edge of the screen.
+
+Another challenge, which applies not just to this suggestion but to any mobile-specific input system, is how to detect that we are on mobile. I suggest somehow detecting if we are using coarse or precise input, but there may be better ways.
+
+You might decide that there are better ways to achieve the end goal.
+
+### items
+
+- mobile input feature: press and hold on cell, a ring appears with letters of the alphabet
+- at small scales, once the clues panel has disappeared, we add a button to toggle clues panel full screen?
+- show toggle for always using keyboard input in settings menu 
+- backspace required 
+- consecutive input. I like the idea that if you swipe along a direction, it goes into consectutive input mode, where the letter picker doesnt close after release; this would allow you to input multiple characters. maybe pressing outside the wheel then closes it. Also,the wheel can obscure the clue, so potentially show what letters you've already input somehow

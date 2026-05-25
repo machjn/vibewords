@@ -14,6 +14,8 @@ let pencilMode = false;
 let showOthers = true;
 let verifiedClues = new Set(); // "a-5" / "d-12" — words confirmed correct (shared via server)
 
+const IS_COARSE = window.matchMedia('(pointer: coarse)').matches;
+
 // ── Identity persistence ───────────────────────────────────────────────────
 
 function saveIdentity() {
@@ -215,7 +217,8 @@ function renderPuzzle() {
         inp.spellcheck = false;
         inp.autocorrect = 'off';
         inp.autocapitalize = 'characters';
-        inp.addEventListener('click', () => handleCellClick(r, c));
+        if (IS_COARSE) { inp.readOnly = true; inp.inputMode = 'none'; }
+        inp.addEventListener('click', () => { if (!IS_COARSE) handleCellClick(r, c); });
         inp.addEventListener('keydown', e => handleKeydown(e, r, c));
         inp.addEventListener('input', e => handleInput(e, r, c));
         div.appendChild(inp);
@@ -510,8 +513,10 @@ function selectCell(r, c, dir) {
     el.style.borderLeftColor = '';
   });
 
-  const inp = getInput(r, c);
-  if (inp) { inp.focus(); inp.select(); }
+  if (!IS_COARSE) {
+    const inp = getInput(r, c);
+    if (inp) { inp.focus(); inp.select(); }
+  }
 
   updateActiveClue(r, c, dir);
   updateOtherPlayersClues();
@@ -1215,6 +1220,156 @@ document.addEventListener('click', e => {
   if (!e.target.closest('#settings-wrap'))
     document.getElementById('settings-wrap').classList.remove('open');
 });
+
+// ── Mobile radial letter picker ────────────────────────────────────────────
+// Active on coarse-pointer (touch) devices as a keyboard replacement.
+
+const _PICK_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const _PICK_R  = 128;  // outer ring radius (px)
+const _PICK_r  = 40;   // inner dead-zone radius (px)
+const _PICK_LR = 86;   // letter label radius (px)
+
+let _pState = null;   // { svg, sectors, labels, centerText, cx, cy, row, col, activeIdx }
+let _ptrId  = null;   // active pointer ID
+
+function _pSectorPath(i) {
+  const da = (2 * Math.PI) / 26;
+  const a0 = -Math.PI / 2 + i * da, a1 = a0 + da;
+  const [c0, s0, c1, s1] = [Math.cos(a0), Math.sin(a0), Math.cos(a1), Math.sin(a1)];
+  const R = _PICK_R, r = _PICK_r;
+  return `M${r*c0} ${r*s0} L${R*c0} ${R*s0} A${R} ${R} 0 0 1 ${R*c1} ${R*s1} L${r*c1} ${r*s1} A${r} ${r} 0 0 0 ${r*c0} ${r*s0}Z`;
+}
+
+function _showPicker(row, col, clientX, clientY) {
+  _hidePicker(false);
+  const margin = _PICK_R + 14;
+  const cx = Math.min(Math.max(clientX, margin), window.innerWidth  - margin);
+  const cy = Math.min(Math.max(clientY, margin), window.innerHeight - margin);
+  const sz = margin * 2, mid = sz / 2;
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.id = 'radial-picker-svg';
+  svg.setAttribute('width', sz);
+  svg.setAttribute('height', sz);
+  svg.style.cssText = `position:fixed;left:${cx-mid}px;top:${cy-mid}px;z-index:500;` +
+    `touch-action:none;pointer-events:none;user-select:none;` +
+    `filter:drop-shadow(0 4px 18px rgba(0,0,0,0.4))`;
+
+  const g = document.createElementNS(NS, 'g');
+  g.setAttribute('transform', `translate(${mid},${mid})`);
+
+  const sectors = [], labels = [];
+  for (let i = 0; i < 26; i++) {
+    const midA = -Math.PI / 2 + (i + 0.5) * (2 * Math.PI / 26);
+
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', _pSectorPath(i));
+    path.style.cssText = 'fill:var(--surface,#fff);stroke:var(--border,#ccc);stroke-width:0.5';
+    g.appendChild(path);
+    sectors.push(path);
+
+    const txt = document.createElementNS(NS, 'text');
+    txt.setAttribute('x', (_PICK_LR * Math.cos(midA)).toFixed(1));
+    txt.setAttribute('y', (_PICK_LR * Math.sin(midA)).toFixed(1));
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('dominant-baseline', 'central');
+    txt.setAttribute('font-size', '12');
+    txt.setAttribute('font-weight', '700');
+    txt.setAttribute('font-family', 'inherit');
+    txt.style.cssText = 'fill:var(--text,#000);pointer-events:none';
+    txt.textContent = _PICK_LETTERS[i];
+    g.appendChild(txt);
+    labels.push(txt);
+  }
+
+  const circ = document.createElementNS(NS, 'circle');
+  circ.setAttribute('r', _PICK_r - 2);
+  circ.style.cssText = 'fill:var(--surface,#fff);stroke:var(--border,#ccc);stroke-width:1';
+  g.appendChild(circ);
+
+  const cTxt = document.createElementNS(NS, 'text');
+  cTxt.setAttribute('text-anchor', 'middle');
+  cTxt.setAttribute('dominant-baseline', 'central');
+  cTxt.setAttribute('font-size', '22');
+  cTxt.setAttribute('font-weight', '900');
+  cTxt.setAttribute('font-family', 'inherit');
+  cTxt.style.fill = 'var(--accent,#3498db)';
+  g.appendChild(cTxt);
+
+  svg.appendChild(g);
+  document.body.appendChild(svg);
+  _pState = { svg, sectors, labels, centerText: cTxt, cx, cy, row, col, activeIdx: -1 };
+}
+
+function _updatePicker(clientX, clientY) {
+  if (!_pState) return;
+  const dx = clientX - _pState.cx, dy = clientY - _pState.cy;
+  const dist = Math.hypot(dx, dy);
+
+  let newIdx = -1;
+  if (dist >= _PICK_r) {
+    let a = Math.atan2(dy, dx) + Math.PI / 2;
+    if (a < 0) a += 2 * Math.PI;
+    newIdx = Math.floor(a / (2 * Math.PI / 26)) % 26;
+  }
+  if (newIdx === _pState.activeIdx) return;
+  _pState.activeIdx = newIdx;
+
+  _pState.sectors.forEach((path, i) => {
+    path.style.fill = i === newIdx ? 'var(--accent,#3498db)' : 'var(--surface,#fff)';
+  });
+  _pState.labels.forEach((txt, i) => {
+    txt.style.fill = i === newIdx ? 'var(--grid-bg,#fff)' : 'var(--text,#000)';
+  });
+  _pState.centerText.textContent = newIdx >= 0 ? _PICK_LETTERS[newIdx] : '';
+}
+
+function _hidePicker(commit) {
+  if (!_pState) return;
+  const { row, col, activeIdx } = _pState;
+  _pState.svg.remove();
+  _pState = null;
+  if (commit && activeIdx >= 0) {
+    commitCell(row, col, _PICK_LETTERS[activeIdx]);
+    advance(row, col, sel.dir);
+  }
+}
+
+if (IS_COARSE) {
+  document.getElementById('crossword-grid').addEventListener('pointerdown', e => {
+    const cellEl = e.target.closest('.cell:not(.black)');
+    if (!cellEl) return;
+    e.preventDefault();
+    _ptrId = e.pointerId;
+
+    const r = +cellEl.dataset.row, c = +cellEl.dataset.col;
+    let dir = sel.dir;
+    if (sel.row === r && sel.col === c) {
+      const toggled = flip(sel.dir);
+      if (wordLength(r, c, toggled) > 1) dir = toggled;
+    }
+    selectCell(r, c, dir);
+    _showPicker(r, c, e.clientX, e.clientY);
+  }, { passive: false });
+
+  document.addEventListener('pointermove', e => {
+    if (e.pointerId !== _ptrId) return;
+    _updatePicker(e.clientX, e.clientY);
+  });
+
+  document.addEventListener('pointerup', e => {
+    if (e.pointerId !== _ptrId) return;
+    _ptrId = null;
+    _hidePicker(true);
+  });
+
+  document.addEventListener('pointercancel', e => {
+    if (e.pointerId !== _ptrId) return;
+    _ptrId = null;
+    _hidePicker(false);
+  });
+}
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 
