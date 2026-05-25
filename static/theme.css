@@ -61,6 +61,27 @@ html[data-theme="dark"] {
   z-index: 10;
 }
 
+.theme-picker {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.35rem;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+.theme-picker[hidden] { display: none; }
+
+.theme-picker-btn.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .github-link {
   color: var(--text-3);
   text-decoration: none;
@@ -89,8 +110,3 @@ html[data-theme="dark"] {
 .theme-btn:hover { background: var(--surface-3); color: var(--text); }
 .theme-btn svg { width: 16px; height: 16px; }
 
-/* Show moon in light mode (click to go dark), sun in dark mode (click to go light) */
-.theme-sun  { display: none; }
-.theme-moon { display: block; }
-html[data-theme="dark"] .theme-sun  { display: block; }
-html[data-theme="dark"] .theme-moon { display: none; }
