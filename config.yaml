@@ -7,3 +7,9 @@ room:
 ui:
   hold_delay_ms: 300
   hold_drift_px: 8
+
+connectors:
+  enabled:
+    - independent
+    - guardian
+    - ipuz

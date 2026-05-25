@@ -29,7 +29,7 @@ ScraperError = (_GuardianScraperError, _IndependentScraperError)
 
 cfg = load_config()
 
-_SCRAPERS = {
+_ALL_SCRAPERS = {
     "guardian_cryptic": {
         "instance": GuardianScraper("cryptic", weekly_rate=6),
         "source": "guardian", "source_name": "Guardian",
@@ -52,6 +52,8 @@ _SCRAPERS = {
     },
 }
 
+_SCRAPERS = {k: v for k, v in _ALL_SCRAPERS.items() if v["source"] in cfg.connectors.enabled}
+
 _log_level_name = cfg.server.log_level
 _log_level = getattr(logging, _log_level_name, logging.INFO)
 
@@ -66,6 +68,7 @@ async def lifespan(app: FastAPI):
     for handler in logging.getLogger("uvicorn").handlers:
         logger.addHandler(handler)
     logger.info("VibeWord starting | log_level=%s", _log_level_name)
+    logger.info("Config:\n%s", cfg)
     yield
 
 
@@ -371,6 +374,8 @@ def _make_room(puzzle: Puzzle, source: str = "upload") -> str:
 
 @app.post("/api/rooms")
 async def create_room(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    if "ipuz" not in cfg.connectors.enabled:
+        raise HTTPException(status_code=404, detail="IPUZ upload is not enabled")
     prune_rooms()
     content = await file.read()
     try:
@@ -387,7 +392,11 @@ async def create_room(background_tasks: BackgroundTasks, file: UploadFile = File
 
 @app.get("/api/config")
 def get_config():
-    return {"hold_delay_ms": cfg.ui.hold_delay_ms, "hold_drift_px": cfg.ui.hold_drift_px}
+    return {
+        "hold_delay_ms": cfg.ui.hold_delay_ms,
+        "hold_drift_px": cfg.ui.hold_drift_px,
+        "ipuz_enabled": "ipuz" in cfg.connectors.enabled,
+    }
 
 
 # ── Scrapers metadata ──────────────────────────────────────────────────────

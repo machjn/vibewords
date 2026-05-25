@@ -36,6 +36,12 @@ room:
 ui:
   hold_delay_ms: 300  # hold duration before the mobile letter picker appears
   hold_drift_px: 8    # cancel the hold if the finger moves this many pixels
+
+connectors:
+  enabled:            # remove any entry to disable that source entirely
+    - guardian
+    - independent
+    - ipuz
 ```
 
 Examples:

@@ -5,34 +5,65 @@ from typing import Any
 
 import yaml
 
+_ALL_CONNECTORS = ["guardian", "independent", "ipuz"]
+
+
+class ConfigBase:
+    def _to_lines(self, indent: int = 0) -> list[str]:
+        prefix = "  " * indent
+        lines = []
+        for f in fields(self):
+            val = getattr(self, f.name)
+            if isinstance(val, ConfigBase):
+                lines.append(f"{prefix}{f.name}:")
+                lines.extend(val._to_lines(indent + 1))
+            else:
+                lines.append(f"{prefix}{f.name}: {val!r}")
+        return lines
+
+    def __str__(self) -> str:
+        return "\n".join(self._to_lines())
+
 
 @dataclass
-class ServerConfig:
+class ServerConfig(ConfigBase):
     log_level: str = "INFO"
 
 
 @dataclass
-class RoomConfig:
+class RoomConfig(ConfigBase):
     ttl_hours: int = 6
 
 
 @dataclass
-class UiConfig:
+class UiConfig(ConfigBase):
     hold_delay_ms: int = 300
     hold_drift_px: int = 8
 
 
 @dataclass
-class Config:
+class ConnectorsConfig(ConfigBase):
+    enabled: list = field(default_factory=lambda: list(_ALL_CONNECTORS))
+
+
+@dataclass
+class Config(ConfigBase):
     server: ServerConfig = field(default_factory=ServerConfig)
     room: RoomConfig = field(default_factory=RoomConfig)
     ui: UiConfig = field(default_factory=UiConfig)
+    connectors: ConnectorsConfig = field(default_factory=ConnectorsConfig)
+    source: str = field(default="defaults", init=False, compare=False)
 
 
 def _apply_dict(section_obj: Any, data: dict) -> None:
     for f in fields(section_obj):
-        if f.name in data:
-            setattr(section_obj, f.name, type(getattr(section_obj, f.name))(data[f.name]))
+        if f.name not in data:
+            continue
+        existing = getattr(section_obj, f.name)
+        if isinstance(existing, list):
+            setattr(section_obj, f.name, list(data[f.name]))
+        else:
+            setattr(section_obj, f.name, type(existing)(data[f.name]))
 
 
 def _apply_env(section_name: str, section_obj: Any) -> None:
@@ -40,8 +71,13 @@ def _apply_env(section_name: str, section_obj: Any) -> None:
     for f in fields(section_obj):
         env_key = prefix + f.name.upper()
         val = os.environ.get(env_key)
-        if val is not None:
-            setattr(section_obj, f.name, type(getattr(section_obj, f.name))(val))
+        if val is None:
+            continue
+        existing = getattr(section_obj, f.name)
+        if isinstance(existing, list):
+            setattr(section_obj, f.name, [s.strip() for s in val.split(',') if s.strip()])
+        else:
+            setattr(section_obj, f.name, type(existing)(val))
 
 
 def load_config() -> Config:
@@ -55,9 +91,10 @@ def load_config() -> Config:
         if path.exists():
             with path.open() as f:
                 raw = yaml.safe_load(f) or {}
+            cfg.source = str(path.resolve())
             break
 
-    sections = {"server": cfg.server, "room": cfg.room, "ui": cfg.ui}
+    sections = {"server": cfg.server, "room": cfg.room, "ui": cfg.ui, "connectors": cfg.connectors}
     for name, obj in sections.items():
         if name in raw and isinstance(raw[name], dict):
             _apply_dict(obj, raw[name])

@@ -211,11 +211,11 @@
 
   <a href="/rooms" class="rooms-btn">View active rooms</a>
 
-  <div class="card">
+  <div class="card" id="create-card">
     <div class="card-heading">Create a room</div>
 
     <!-- ── By date ── -->
-    <div class="section">
+    <div class="section" id="date-section">
       <div class="section-label">
         <span>Scrape crossword by date</span>
       </div>
@@ -246,7 +246,7 @@
     </div>
 
     <!-- ── File upload ── -->
-    <div class="section">
+    <div class="section" id="ipuz-section">
       <div class="section-label"><span>Upload .ipuz</span></div>
       <div class="upload-zone" id="drop-zone">
         <div class="upload-icon">&#9635;</div>
@@ -258,6 +258,9 @@
 
   </div>
 
+  <div id="no-connectors-msg" style="display:none; width:100%; max-width:420px; background:var(--surface); border-radius:12px; box-shadow:0 2px 8px var(--shadow); padding:2rem 1.75rem; text-align:center; color:var(--text-3);">
+    No connectors are enabled. Add at least one to <code>config.yaml</code>.
+  </div>
 
   <div class="corner-bar">
     <button class="theme-btn" data-theme-btn onclick="openThemePicker(event)" title="Choose theme" aria-label="Choose theme">
@@ -322,11 +325,11 @@
       const hint    = document.getElementById('url-hint');
 
       if (urlCapable.length === 0) {
-        section.classList.add('dimmed');
-        hint.textContent = '';
+        section.style.display = 'none';
         return;
       }
 
+      section.style.display = '';
       section.classList.remove('dimmed');
       const sourceNames = [...new Set(urlCapable.map(s => s.source_name))];
       hint.textContent = '(' + sourceNames.join(', ') + ')';
@@ -446,7 +449,28 @@
 
     // ── Boot ──────────────────────────────────────────────────────────────
 
-    loadScrapers();
+    async function init() {
+      const [, appCfg] = await Promise.all([
+        loadScrapers(),
+        fetch('/api/config').then(r => r.json()).catch(() => ({})),
+      ]);
+
+      if (!appCfg.ipuz_enabled) {
+        document.getElementById('ipuz-section').style.display = 'none';
+      }
+
+      if (scrapers.length === 0) {
+        document.getElementById('date-section').style.display = 'none';
+        document.getElementById('url-section').style.display = 'none';
+      }
+
+      if (scrapers.length === 0 && !appCfg.ipuz_enabled) {
+        document.getElementById('create-card').style.display = 'none';
+        document.getElementById('no-connectors-msg').style.display = '';
+      }
+    }
+
+    init();
 
     // Reset loading state if browser restores page from bfcache (back button).
     window.addEventListener('pageshow', e => {
