@@ -212,8 +212,9 @@
 
     /* ── Active clue banner ── */
     #clue-banner {
-      background: var(--toolbar);
-      color: white;
+      background: var(--surface);
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
       padding: 0.4rem 1.25rem;
       font-size: 1rem;
       flex-shrink: 0;
@@ -225,19 +226,19 @@
 
     /* Active clue — shown automatically only when the clue panel is hidden */
     #clue-display {
-      background: var(--toolbar-2);
-      color: var(--text-4);
+      background: var(--surface-2);
+      color: var(--text);
       padding: 0.45rem 1.25rem;
       font-size: 1rem;
       line-height: 1.4;
       min-height: calc(2 * 1.4em + 2 * 0.45rem);
       flex-shrink: 0;
-      border-top: 1px solid var(--toolbar-3);
+      border-top: 1px solid var(--border);
       display: none;
     }
     #clue-display:empty::before {
       content: 'Select a clue…';
-      color: rgba(255,255,255,0.3);
+      color: var(--text-4);
       font-style: italic;
     }
 
@@ -246,9 +247,9 @@
       align-items: center;
       gap: 0.35rem;
       padding: 0.3rem 0.75rem;
-      background: rgba(255,255,255,0.12);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.25);
+      background: var(--surface-3);
+      color: var(--text);
+      border: 1px solid var(--border);
       border-radius: 4px;
       font-size: 0.88rem;
       font-family: inherit;
@@ -264,18 +265,18 @@
       flex-shrink: 0;
       pointer-events: none;
     }
-    .action-btn:hover:not(:disabled) { background: rgba(255,255,255,0.22); }
+    .action-btn:hover:not(:disabled) { background: var(--surface-hover); }
     .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .action-btn.active { background: var(--warning); border-color: var(--warning); }
-    #pencil-btn.active { background: var(--accent); border-color: var(--accent); }
+    .action-btn.active { background: var(--warning); border-color: var(--warning); color: white; }
+    #pencil-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
     #pencil-btn.active:hover { background: var(--accent-2); border-color: var(--accent-2); }
-    #export-btn { background: var(--accent); border-color: var(--accent); }
-    #export-btn:hover { background: var(--accent); border-color: var(--accent); }
+    #export-btn { background: var(--accent); border-color: var(--accent); color: white; }
+    #export-btn:hover { background: var(--accent-2); border-color: var(--accent-2); }
 
     .btn-sep {
       width: 1px;
       align-self: stretch;
-      background: rgba(255,255,255,0.2);
+      background: var(--border);
       flex-shrink: 0;
       margin: 0 0.1rem;
     }

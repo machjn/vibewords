@@ -25,20 +25,20 @@
       height: 48px;
       display: flex;
       align-items: center;
-      gap: 1rem;
       flex-shrink: 0;
+      position: relative;
     }
 
     .logo { font-weight: 800; font-size: 1.1rem; color: var(--accent); letter-spacing: -0.5px; text-decoration: none; }
 
-    .header-title { font-weight: 600; color: var(--text); flex: 1; }
-
-    .nav-link {
-      font-size: 0.85rem;
-      color: var(--accent);
-      text-decoration: none;
+    .header-title {
+      font-weight: 600;
+      color: var(--text);
+      position: absolute;
+      left: 0; right: 0;
+      text-align: center;
+      pointer-events: none;
     }
-    .nav-link:hover { text-decoration: underline; }
 
     main {
       flex: 1;
@@ -47,17 +47,6 @@
       width: 100%;
       margin: 0 auto;
     }
-
-    .page-header {
-      display: flex;
-      align-items: baseline;
-      gap: 1rem;
-      margin-bottom: 1.25rem;
-    }
-
-    h1 { font-size: 1.3rem; font-weight: 700; color: var(--text); }
-
-    .refresh-info { display: none; }
 
     /* ── Table ── */
     .rooms-table {
@@ -134,7 +123,7 @@
     .join-btn {
       padding: 0.3rem 0.8rem;
       background: var(--accent);
-      color: white;
+      color: var(--surface-2);
       border: none;
       border-radius: 5px;
       font-size: 0.82rem;
@@ -160,18 +149,19 @@
 
     .empty p { margin-bottom: 1rem; }
 
-    .create-link {
-      display: inline-block;
+    .create-btn {
       padding: 0.5rem 1.2rem;
       background: var(--accent);
-      color: white;
+      color: var(--surface-2);
+      border: none;
       border-radius: 6px;
-      text-decoration: none;
       font-weight: 600;
       font-size: 0.9rem;
+      font-family: inherit;
+      cursor: pointer;
       transition: background 0.15s;
     }
-    .create-link:hover { background: var(--accent-2); }
+    .create-btn:hover { background: var(--accent-2); }
 
     /* ── Responsive ── */
     @media (max-width: 620px) {
@@ -198,20 +188,17 @@
   <header>
     <a class="logo" href="/">VibeWord</a>
     <span class="header-title">Active Rooms</span>
-    <a class="nav-link" href="/">+ New room</a>
   </header>
 
   <main>
-    <div class="page-header">
-      <h1>Rooms</h1>
-      <span class="refresh-info" id="refresh-info"></span>
-    </div>
     <div id="content"></div>
+    <div style="margin-top: 1.25rem; text-align: center;">
+      <button class="create-btn" onclick="location.href='/'">Create New Room</button>
+    </div>
   </main>
 
   <script>
     const REFRESH_INTERVAL = 10_000;
-    let lastFetch = null;
 
     function relativeTime(epochSeconds) {
       const diff = Math.floor(Date.now() / 1000 - epochSeconds);
@@ -224,11 +211,7 @@
       const el = document.getElementById('content');
 
       if (!rooms.length) {
-        el.innerHTML = `
-          <div class="empty">
-            <p>No active rooms yet.</p>
-            <a class="create-link" href="/">Create one</a>
-          </div>`;
+        el.innerHTML = `<div class="empty"><p>No active rooms yet.</p></div>`;
         return;
       }
 
@@ -270,20 +253,12 @@
         </table>`;
     }
 
-    function updateRefreshInfo() {
-      if (!lastFetch) return;
-      const ago = Math.round((Date.now() - lastFetch) / 1000);
-      document.getElementById('refresh-info').textContent =
-        `Updated ${ago === 0 ? 'just now' : ago + 's ago'} · refreshes every ${REFRESH_INTERVAL / 1000}s`;
-    }
-
     async function load() {
       try {
         const res = await fetch('/api/rooms');
         const data = await res.json();
         renderRooms(data);
         lastFetch = Date.now();
-        updateRefreshInfo();
       } catch (e) {
         document.getElementById('content').textContent = 'Failed to load rooms.';
       }
@@ -296,7 +271,6 @@
 
     load();
     setInterval(load, REFRESH_INTERVAL);
-    setInterval(updateRefreshInfo, 5_000);
   </script>
 
   <div class="corner-bar">
