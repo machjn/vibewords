@@ -33,6 +33,7 @@ Minor:
 - capture colour palette, create themes /
 - background image on landing page?
 - show room timer in room dropdown?
+- abstract application config like wheel delay hold, drift etc. into a yaml config file that the application reads at startup
 
 Major:
 - Add other scrapers
@@ -110,3 +111,17 @@ You might decide that there are better ways to achieve the end goal.
 - show toggle for always using keyboard input in settings menu 
 - backspace required 
 - consecutive input. I like the idea that if you swipe along a direction, it goes into consectutive input mode, where the letter picker doesnt close after release; this would allow you to input multiple characters. maybe pressing outside the wheel then closes it. Also,the wheel can obscure the clue, so potentially show what letters you've already input somehow
+
+
+
+
+## Neon grid visual feature
+
+- hit a scaling issue where, because, obviously, now I think about it, the sizes of elements are flexible, drawing lines claims more space
+
+
+Alright. I want to add some application configuration. Primarily this should be a yaml file. Then we can have a different yaml file for different environments. But any option should be able to be configured via environment variable too, I guess you can do some mapping from yaml key to env var name.
+
+Among the configuration options should be for example, the wait duration before the wheel appears. Add anything else you thing ought to be configurable, and plumb it up. This might mean moving some values serverside that were previously hardcoded in the javascript. I'll leave it up to your discretion, we can always make modifications later.
+
+This next thing I don't want you to do right away, but it will be the next thing I ask you to do, so keep it in mind. For each input method (we can call them connectors or whatever) of Guardian, Independent, Ipuz, I want to only enable them if they are among a list of enabled connectors in the config. So that they have to be explicitly enabled.

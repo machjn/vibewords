@@ -14,6 +14,6 @@ The first line should be a single sentence that captures the big-picture intent 
 
 Then should follow a list of the salient changes in the diff.
 
-The commit message should be plaintext. 
+The commit message should be plaintext. No bullet points or non-ASCII punctuation
 
-Output should be exactly the commit message and no more, and offer a copy button.
+Output should be exactly the commit message and no more.

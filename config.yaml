@@ -1,0 +1,9 @@
+server:
+  log_level: "INFO"
+
+room:
+  ttl_hours: 6
+
+ui:
+  hold_delay_ms: 300
+  hold_drift_px: 8

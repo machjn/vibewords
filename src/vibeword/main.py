@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from vibeword.config import load_config
 from vibeword.ipuz_parser import Puzzle, parse_ipuz
 from vibeword.scrapers.guardian import GuardianScraper
 from vibeword.scrapers.guardian import ScraperError as _GuardianScraperError
@@ -25,6 +26,8 @@ from vibeword.scrapers.independent import IndependentScraper
 from vibeword.scrapers.independent import ScraperError as _IndependentScraperError
 
 ScraperError = (_GuardianScraperError, _IndependentScraperError)
+
+cfg = load_config()
 
 _SCRAPERS = {
     "guardian_cryptic": {
@@ -49,7 +52,7 @@ _SCRAPERS = {
     },
 }
 
-_log_level_name = os.getenv("LOG_LEVEL", "INFO").upper()
+_log_level_name = cfg.server.log_level
 _log_level = getattr(logging, _log_level_name, logging.INFO)
 
 logger = logging.getLogger("vibeword")
@@ -69,7 +72,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 COLORS = ["#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c", "#e67e22", "#e91e63"]
-ROOM_TTL = 60 * 60 * 6  # 6 hours
+ROOM_TTL = cfg.room.ttl_hours * 3600
 
 
 def _make_short_title(title: str) -> str:
@@ -378,6 +381,13 @@ async def create_room(background_tasks: BackgroundTasks, file: UploadFile = File
     room_id = _make_room(puzzle, source=f"file:{file.filename}")
     background_tasks.add_task(_fifteensquared_background, room_id)
     return {"room_id": room_id}
+
+
+# ── Client config ─────────────────────────────────────────────────────────
+
+@app.get("/api/config")
+def get_config():
+    return {"hold_delay_ms": cfg.ui.hold_delay_ms, "hold_drift_px": cfg.ui.hold_drift_px}
 
 
 # ── Scrapers metadata ──────────────────────────────────────────────────────

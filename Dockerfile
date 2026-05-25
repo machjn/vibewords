@@ -7,6 +7,7 @@ COPY src/ ./src/
 RUN pip install --no-cache-dir .
 
 COPY static/ ./static/
+COPY config.yaml .
 
 ENV PORT=8080
 

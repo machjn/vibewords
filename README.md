@@ -22,11 +22,30 @@ uvicorn vibeword.main:app --reload
 
 Open http://localhost:8000.
 
-## Debug logging
+## Configuration
+
+Configuration is read from `config.yaml` in the working directory (override the path with `VIBEWORD_CONFIG`). Any option can also be set via environment variable using the pattern `VIBEWORD_<SECTION>_<FIELD>` — env vars take precedence over the file.
+
+```yaml
+server:
+  log_level: "INFO"   # DEBUG, INFO, WARNING, ERROR
+
+room:
+  ttl_hours: 6        # how long an inactive room lives
+
+ui:
+  hold_delay_ms: 300  # hold duration before the mobile letter picker appears
+  hold_drift_px: 8    # cancel the hold if the finger moves this many pixels
+```
+
+Examples:
 
 ```bash
-export LOG_LEVEL=DEBUG
-uvicorn vibeword.main:app --reload
+# Use a different config file
+VIBEWORD_CONFIG=config.prod.yaml uvicorn vibeword.main:app
+
+# Enable debug logging without editing the file
+VIBEWORD_SERVER_LOG_LEVEL=DEBUG uvicorn vibeword.main:app --reload
 ```
 
 ## Guardian scraper (standalone)

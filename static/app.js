@@ -1341,8 +1341,8 @@ function _hidePicker(commit) {
   }
 }
 
-const HOLD_MS = 300;          // hold duration before picker appears
-const HOLD_DRIFT_PX = 8;      // cancel hold if finger moves this far
+let HOLD_MS = 300;
+let HOLD_DRIFT_PX = 8;
 
 if (IS_COARSE) {
   let _holdTimer = null;
@@ -1405,4 +1405,11 @@ if (IS_COARSE) {
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 
-connect();
+fetch('/api/config')
+  .then(r => r.ok ? r.json() : {})
+  .then(c => {
+    if (c.hold_delay_ms != null) HOLD_MS = c.hold_delay_ms;
+    if (c.hold_drift_px != null) HOLD_DRIFT_PX = c.hold_drift_px;
+  })
+  .catch(() => {})
+  .finally(() => connect());
