@@ -1341,12 +1341,20 @@ function _hidePicker(commit) {
   }
 }
 
+const HOLD_MS = 300;          // hold duration before picker appears
+const HOLD_DRIFT_PX = 8;      // cancel hold if finger moves this far
+
 if (IS_COARSE) {
+  let _holdTimer = null;
+  let _holdX = 0, _holdY = 0;
+
   document.getElementById('crossword-grid').addEventListener('pointerdown', e => {
     const cellEl = e.target.closest('.cell:not(.black)');
     if (!cellEl) return;
     e.preventDefault();
     _ptrId = e.pointerId;
+    _holdX = e.clientX;
+    _holdY = e.clientY;
 
     const r = +cellEl.dataset.row, c = +cellEl.dataset.col;
     let dir = sel.dir;
@@ -1354,24 +1362,43 @@ if (IS_COARSE) {
       const toggled = flip(sel.dir);
       if (wordLength(r, c, toggled) > 1) dir = toggled;
     }
-    selectCell(r, c, dir);
-    _showPicker(r, c, e.clientX, e.clientY);
+    selectCell(r, c, dir);  // immediate on tap — cell is selected right away
+
+    _holdTimer = setTimeout(() => {
+      _holdTimer = null;
+      _showPicker(sel.row, sel.col, _holdX, _holdY);
+    }, HOLD_MS);
   }, { passive: false });
 
   document.addEventListener('pointermove', e => {
     if (e.pointerId !== _ptrId) return;
+    if (_holdTimer !== null) {
+      // Cancel hold if finger drifted before picker appeared
+      if (Math.hypot(e.clientX - _holdX, e.clientY - _holdY) > HOLD_DRIFT_PX) {
+        clearTimeout(_holdTimer);
+        _holdTimer = null;
+      }
+      return;
+    }
     _updatePicker(e.clientX, e.clientY);
   });
 
   document.addEventListener('pointerup', e => {
     if (e.pointerId !== _ptrId) return;
     _ptrId = null;
+    if (_holdTimer !== null) {
+      clearTimeout(_holdTimer);
+      _holdTimer = null;
+      return;  // quick tap — cell already selected, no letter entered
+    }
     _hidePicker(true);
   });
 
   document.addEventListener('pointercancel', e => {
     if (e.pointerId !== _ptrId) return;
     _ptrId = null;
+    clearTimeout(_holdTimer);
+    _holdTimer = null;
     _hidePicker(false);
   });
 }
