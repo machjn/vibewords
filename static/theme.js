@@ -1,6 +1,6 @@
 // Apply saved theme before first paint to avoid flash
 (function () {
-  var t = localStorage.getItem('vw-theme');
+  var t = localStorage.getItem('vw-theme') || 'neon';
   if (t === 'dark' || t === 'neon') document.documentElement.dataset.theme = t;
 }());
 
