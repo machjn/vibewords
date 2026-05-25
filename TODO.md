@@ -111,6 +111,10 @@ You might decide that there are better ways to achieve the end goal.
 - show toggle for always using keyboard input in settings menu 
 - backspace required 
 - consecutive input. I like the idea that if you swipe along a direction, it goes into consectutive input mode, where the letter picker doesnt close after release; this would allow you to input multiple characters. maybe pressing outside the wheel then closes it. Also,the wheel can obscure the clue, so potentially show what letters you've already input somehow
+- wheel should not reopen each time
+- position should not change once opened
+- show letters around the outside
+- fix the internal ring, looks janky
 
 
 

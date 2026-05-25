@@ -1231,8 +1231,9 @@ const _PICK_R_F  = 0.34;   // outer ring  (~128px on a 375px-wide phone)
 const _PICK_r_F  = 0.107;  // inner dead-zone (~40px)
 const _PICK_LR_F = 0.23;   // letter label placement (~86px)
 
-let _pState = null;   // { svg, sectors, labels, centerText, cx, cy, pr, row, col, activeIdx }
+let _pState = null;   // { svg, sectors, labels, centerText, cx, cy, pr, prOuter, row, col, activeIdx }
 let _ptrId  = null;   // active pointer ID
+let _consecutiveMode = false;
 
 function _pSectorPath(i, R, r) {
   const da = (2 * Math.PI) / 26;
@@ -1263,6 +1264,7 @@ function _showPicker(row, col, clientX, clientY) {
 
   const g = document.createElementNS(NS, 'g');
   g.setAttribute('transform', `translate(${mid},${mid})`);
+  g.style.pointerEvents = 'none'; // Firefox doesn't inherit pointer-events:none from <svg>
 
   const sectors = [], labels = [];
   for (let i = 0; i < 26; i++) {
@@ -1288,10 +1290,23 @@ function _showPicker(row, col, clientX, clientY) {
     labels.push(txt);
   }
 
-  const circ = document.createElementNS(NS, 'circle');
-  circ.setAttribute('r', Pr - 2);
-  circ.style.cssText = 'fill:var(--surface,#fff);stroke:var(--border,#ccc);stroke-width:1';
-  g.appendChild(circ);
+  // Outer lip — sits on top of the sector outer arcs for a clean edge.
+  const outerRing = document.createElementNS(NS, 'circle');
+  outerRing.setAttribute('r', PR);
+  outerRing.style.cssText = 'fill:none;stroke:var(--border,#ccc);stroke-width:6';
+  g.appendChild(outerRing);
+
+  // Inner fill — covers the ragged inner arc edges of the sectors exactly.
+  const innerFill = document.createElementNS(NS, 'circle');
+  innerFill.setAttribute('r', Pr);
+  innerFill.style.cssText = 'fill:var(--surface,#fff);stroke:none';
+  g.appendChild(innerFill);
+
+  // Inner lip ring — clean border around the dead zone.
+  const innerRing = document.createElementNS(NS, 'circle');
+  innerRing.setAttribute('r', Pr);
+  innerRing.style.cssText = 'fill:none;stroke:var(--border,#ccc);stroke-width:2';
+  g.appendChild(innerRing);
 
   const cTxt = document.createElementNS(NS, 'text');
   cTxt.setAttribute('text-anchor', 'middle');
@@ -1304,7 +1319,7 @@ function _showPicker(row, col, clientX, clientY) {
 
   svg.appendChild(g);
   document.body.appendChild(svg);
-  _pState = { svg, sectors, labels, centerText: cTxt, cx, cy, pr: Pr, row, col, activeIdx: -1 };
+  _pState = { svg, sectors, labels, centerText: cTxt, cx, cy, pr: Pr, prOuter: PR, row, col, activeIdx: -1 };
 }
 
 function _updatePicker(clientX, clientY) {
@@ -1333,12 +1348,27 @@ function _updatePicker(clientX, clientY) {
 function _hidePicker(commit) {
   if (!_pState) return;
   const { row, col, activeIdx } = _pState;
-  _pState.svg.remove();
-  _pState = null;
+
   if (commit && activeIdx >= 0) {
     commitCell(row, col, _PICK_LETTERS[activeIdx]);
     advance(row, col, sel.dir);
+    if (_consecutiveMode && (sel.row !== row || sel.col !== col)) {
+      // Keep the wheel open and stationary; just reset to the next cell.
+      _pState.row = sel.row;
+      _pState.col = sel.col;
+      _pState.activeIdx = -1;
+      _pState.sectors.forEach(p => { p.style.fill = 'var(--surface,#fff)'; });
+      _pState.labels.forEach(t => { t.style.fill = 'var(--text,#000)'; });
+      _pState.centerText.textContent = '';
+      return;
+    }
+    _consecutiveMode = false;
+  } else {
+    _consecutiveMode = false;
   }
+
+  _pState.svg.remove();
+  _pState = null;
 }
 
 let HOLD_MS = 300;
@@ -1347,16 +1377,40 @@ let HOLD_DRIFT_PX = 8;
 if (IS_COARSE) {
   let _holdTimer = null;
   let _holdX = 0, _holdY = 0;
+  let _swipeCells = [];
+  let _isSwiping = false;
+
+  // Capture-phase handler fires before any element handler, so it intercepts
+  // consecutive-mode touches regardless of what element Firefox routes them to
+  // (SVG children can be targeted despite pointer-events:none on the parent).
+  document.addEventListener('pointerdown', e => {
+    if (!_consecutiveMode || !_pState) return;
+    const dist = Math.hypot(e.clientX - _pState.cx, e.clientY - _pState.cy);
+    if (dist <= _pState.prOuter + 14) {
+      // Inside the picker — grab the pointer for a pick gesture.
+      e.stopPropagation();
+      e.preventDefault();
+      _ptrId = e.pointerId;
+      _holdTimer = null;
+      _isSwiping = false;
+    } else {
+      // Outside the picker — exit consecutive mode, let the tap fall through normally.
+      _consecutiveMode = false;
+      _hidePicker(false);
+    }
+  }, { capture: true, passive: false });
 
   document.getElementById('crossword-grid').addEventListener('pointerdown', e => {
     const cellEl = e.target.closest('.cell:not(.black)');
     if (!cellEl) return;
     e.preventDefault();
+    const r = +cellEl.dataset.row, c = +cellEl.dataset.col;
     _ptrId = e.pointerId;
     _holdX = e.clientX;
     _holdY = e.clientY;
+    _swipeCells = [{ r, c }];
+    _isSwiping = false;
 
-    const r = +cellEl.dataset.row, c = +cellEl.dataset.col;
     let dir = sel.dir;
     if (sel.row === r && sel.col === c) {
       const toggled = flip(sel.dir);
@@ -1373,10 +1427,22 @@ if (IS_COARSE) {
   document.addEventListener('pointermove', e => {
     if (e.pointerId !== _ptrId) return;
     if (_holdTimer !== null) {
-      // Cancel hold if finger drifted before picker appeared
       if (Math.hypot(e.clientX - _holdX, e.clientY - _holdY) > HOLD_DRIFT_PX) {
+        // Finger moved — cancel hold and switch to swipe tracking.
         clearTimeout(_holdTimer);
         _holdTimer = null;
+        _isSwiping = true;
+      }
+      return;
+    }
+    if (_isSwiping) {
+      // Accumulate cells crossed during the swipe.
+      const target = document.elementFromPoint(e.clientX, e.clientY);
+      const hitCell = target?.closest('.cell:not(.black)');
+      if (hitCell) {
+        const r2 = +hitCell.dataset.row, c2 = +hitCell.dataset.col;
+        const last = _swipeCells[_swipeCells.length - 1];
+        if (r2 !== last.r || c2 !== last.c) _swipeCells.push({ r: r2, c: c2 });
       }
       return;
     }
@@ -1391,6 +1457,28 @@ if (IS_COARSE) {
       _holdTimer = null;
       return;  // quick tap — cell already selected, no letter entered
     }
+    if (_isSwiping) {
+      _isSwiping = false;
+      if (_swipeCells.length >= 2) {
+        // Determine swipe direction from start and end cells.
+        const first = _swipeCells[0], last = _swipeCells[_swipeCells.length - 1];
+        const dr = Math.abs(last.r - first.r), dc = Math.abs(last.c - first.c);
+        const swipeDir = dr >= dc ? 'down' : 'across';
+        // Jump to the first cell of the clue and enter consecutive input mode.
+        const run = runCells(first.r, first.c, swipeDir);
+        if (run.length >= 2) {
+          const [fr, fc] = run[0];
+          selectCell(fr, fc, swipeDir);
+          _consecutiveMode = true;
+          const startCellEl = getCell(fr, fc);
+          if (startCellEl) {
+            const rect = startCellEl.getBoundingClientRect();
+            _showPicker(fr, fc, rect.left + rect.width / 2, rect.top + rect.height / 2);
+          }
+        }
+      }
+      return;
+    }
     _hidePicker(true);
   });
 
@@ -1399,6 +1487,8 @@ if (IS_COARSE) {
     _ptrId = null;
     clearTimeout(_holdTimer);
     _holdTimer = null;
+    _isSwiping = false;
+    _consecutiveMode = false;
     _hidePicker(false);
   });
 }
