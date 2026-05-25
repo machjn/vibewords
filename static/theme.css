@@ -72,13 +72,6 @@ html[data-theme="dark"] {
 }
 
 /* ── Neon theme ── */
-html[data-theme="neon"] body {
-  background-image: url('/vibeword_bg1.png');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-}
-
 html[data-theme="neon"] {
   --bg:            #0a0010;
   --surface:       #120018;
