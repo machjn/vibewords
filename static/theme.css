@@ -20,7 +20,11 @@
   --toolbar:       #1a1a1a;
   --toolbar-2:     #2a2a2a;
   --toolbar-3:     #3a3a3a;
-  --grid-line:     #1a1a1a;
+  --grid-line:     #000000;
+  --grid-bg:       #ffffff;
+  --grid-black:    #000000;
+  --grid-letter:   #000000;
+  --grid-number:   #333333;
   --shadow:        rgba(0,0,0,0.1);
 }
 
@@ -46,7 +50,11 @@ html[data-theme="dark"] {
   --toolbar:       #0c0c0c;
   --toolbar-2:     #161616;
   --toolbar-3:     #262626;
-  --grid-line:     #3a3a3a;
+  --grid-line:     #434544;
+  --grid-bg:       #ffffff;
+  --grid-black:    #000000;
+  --grid-letter:   #000000;
+  --grid-number:   #333333;
   --shadow:        rgba(0,0,0,0.35);
 }
 

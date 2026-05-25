@@ -33,7 +33,6 @@ uvicorn vibeword.main:app --reload
 
 This is a CLI tool to download a Guardian crossword as an `.ipuz` file 
 
-
 ## Deployment
 
 Right now this is deployed to GCP.
