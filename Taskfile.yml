@@ -1,0 +1,81 @@
+version: '3'
+
+vars:
+  REGISTRY: europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword
+  REGION: europe-west2
+  DEFAULT_SERVICE: vibeword
+
+tasks:
+  dev:
+    desc: Run the dev server with live reload
+    cmd: uvicorn vibeword.main:app --reload
+
+  dev:debug:
+    desc: Run the dev server with debug logging
+    cmd: LOG_LEVEL=DEBUG uvicorn vibeword.main:app --reload
+
+  install:
+    desc: Install the package in editable mode
+    cmd: pip install -e .
+
+  image:tag:
+    desc: Print the default image tag (version + short SHA)
+    silent: true
+    cmd: |
+      VERSION=$(grep '^version' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+      SHA=$(git rev-parse --short HEAD)
+      echo "${VERSION}-${SHA}"
+
+  build:
+    desc: Build and push the Docker image for a single tag. Requires IMAGE_TAG.
+    requires:
+      vars: [IMAGE_TAG]
+    cmds:
+      - docker build -t {{.REGISTRY}}:{{.IMAGE_TAG}} .
+      - docker push {{.REGISTRY}}:{{.IMAGE_TAG}}
+
+  build-ci:
+    desc: Build and push the Docker image with version and latest tags. Requires IMAGE_TAG.
+    requires:
+      vars: [IMAGE_TAG]
+    vars:
+      VERSION:
+        sh: grep '^version' pyproject.toml | sed 's/version = "\(.*\)"/\1/'
+    cmds:
+      - docker build
+          -t {{.REGISTRY}}:{{.IMAGE_TAG}}
+          -t {{.REGISTRY}}:{{.VERSION}}
+          -t {{.REGISTRY}}:latest
+          .
+      - docker push {{.REGISTRY}}:{{.IMAGE_TAG}}
+      - docker push {{.REGISTRY}}:{{.VERSION}}
+      - docker push {{.REGISTRY}}:latest
+
+  deploy:
+    desc: |
+      Deploy an image to Cloud Run.
+        IMAGE_TAG  (required) — the image tag to deploy
+        SERVICE    (optional) — Cloud Run service name (default: {{.DEFAULT_SERVICE}})
+    requires:
+      vars: [IMAGE_TAG]
+    vars:
+      SERVICE: '{{.SERVICE | default .DEFAULT_SERVICE}}'
+    cmd: |
+      gcloud run deploy {{.SERVICE}} \
+        --image {{.REGISTRY}}:{{.IMAGE_TAG}} \
+        --platform managed \
+        --region {{.REGION}} \
+        --timeout 3600 \
+        --allow-unauthenticated \
+        --min-instances=1 \
+        --max-instances=1
+
+  build-and-deploy:
+    desc: Build, push, and deploy in one step. Requires IMAGE_TAG; optionally SERVICE.
+    requires:
+      vars: [IMAGE_TAG]
+    cmds:
+      - task: build
+        vars: { IMAGE_TAG: '{{.IMAGE_TAG}}' }
+      - task: deploy
+        vars: { IMAGE_TAG: '{{.IMAGE_TAG}}', SERVICE: '{{.SERVICE}}' }

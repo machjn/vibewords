@@ -504,8 +504,9 @@ function selectCell(r, c, dir) {
 
   sel = { row: r, col: c, dir };
 
-  // My own selection overlay (same mechanism as other players)
-  if (myUserId && myColor) showUserSelection(myUserId, myColor, r, c, dir);
+  // My own selection overlay — suppressed while picker is open to avoid
+  // blue squares flickering on cells beneath the wheel.
+  if (myUserId && myColor && !_pState) showUserSelection(myUserId, myColor, r, c, dir);
 
   document.querySelectorAll('.clue-item.active').forEach(el => {
     el.classList.remove('active');
@@ -1244,6 +1245,10 @@ function _pSectorPath(i, R, r) {
 
 function _showPicker(row, col, clientX, clientY) {
   _hidePicker(false);
+  // Disable grid pointer events so no touch can reach grid cells while the
+  // picker is on screen, regardless of z-index or browser hit-test quirks.
+  document.getElementById('crossword-grid').style.pointerEvents = 'none';
+  clearUserSelection(myUserId);
   const vmin = Math.min(window.innerWidth, window.innerHeight);
   const PR  = Math.round(vmin * _PICK_R_F);
   const Pr  = Math.round(vmin * _PICK_r_F);
@@ -1317,6 +1322,24 @@ function _showPicker(row, col, clientX, clientY) {
   cTxt.style.fill = 'var(--accent,#3498db)';
   g.appendChild(cTxt);
 
+  // Fullscreen backdrop — covers the entire viewport so the browser has no
+  // choice but to route all touches here rather than to grid cells beneath.
+  // A same-size overlay is unreliable on Chrome Android.
+  const backdropEl = document.createElement('div');
+  backdropEl.style.cssText = 'position:fixed;inset:0;z-index:498;touch-action:none;pointer-events:auto;background:transparent';
+  backdropEl.addEventListener('pointerdown', e => {
+    if (_ptrId !== null) return;  // existing gesture in progress
+    const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+    if (dist <= PR + 14) {
+      e.preventDefault();
+      _ptrId = e.pointerId;
+    } else {
+      _consecutiveMode = false;
+      _hidePicker(false);
+    }
+  }, { passive: false });
+  document.body.appendChild(backdropEl);
+
   svg.appendChild(g);
   document.body.appendChild(svg);
 
@@ -1325,7 +1348,7 @@ function _showPicker(row, col, clientX, clientY) {
   const barY = barTryY + 44 > window.innerHeight ? cy - mid - 50 : barTryY;
   const barEl = _createPickerBar(cx, barY, barCells);
 
-  _pState = { svg, sectors, labels, centerText: cTxt, cx, cy, pr: Pr, prOuter: PR, row, col, activeIdx: -1, touchedOuter: false, barEl };
+  _pState = { svg, backdropEl, sectors, labels, centerText: cTxt, cx, cy, pr: Pr, prOuter: PR, row, col, activeIdx: -1, touchedOuter: false, barEl };
   _updatePickerBar();
 }
 
@@ -1353,11 +1376,9 @@ function _updatePicker(clientX, clientY) {
   if (newIdx >= 0) {
     _pState.centerText.textContent = _PICK_LETTERS[newIdx];
     _pState.centerText.style.fill = 'var(--accent,#3498db)';
-  } else if (_pState.touchedOuter) {
+  } else {
     _pState.centerText.textContent = '⌫';
     _pState.centerText.style.fill = 'var(--text,#000)';
-  } else {
-    _pState.centerText.textContent = '';
   }
 }
 
@@ -1416,7 +1437,7 @@ function _pickerReset(nextRow, nextCol) {
 
 function _hidePicker(commit) {
   if (!_pState) return;
-  const { row, col, activeIdx, touchedOuter } = _pState;
+  const { row, col, activeIdx } = _pState;
 
   if (commit && activeIdx >= 0) {
     commitCell(row, col, _PICK_LETTERS[activeIdx]);
@@ -1426,8 +1447,8 @@ function _hidePicker(commit) {
       return;
     }
     _consecutiveMode = false;
-  } else if (commit && touchedOuter) {
-    // Dragged out then back to centre — backspace gesture.
+  } else if (commit) {
+    // Released in the dead zone — backspace.
     handleBackspace(row, col);
     _pickerReset(sel.row, sel.col);
     return;
@@ -1436,8 +1457,11 @@ function _hidePicker(commit) {
   }
 
   if (_pState.barEl) _pState.barEl.remove();
+  _pState.backdropEl?.remove();
   _pState.svg.remove();
   _pState = null;
+  document.getElementById('crossword-grid').style.pointerEvents = '';
+  if (myUserId && myColor) showUserSelection(myUserId, myColor, sel.row, sel.col, sel.dir);
 }
 
 let HOLD_MS = 300;
@@ -1449,29 +1473,15 @@ if (IS_COARSE) {
   let _swipeCells = [];
   let _isSwiping = false;
 
-  // Capture-phase handler fires before any element handler, so it intercepts
-  // consecutive-mode touches regardless of what element Firefox routes them to
-  // (SVG children can be targeted despite pointer-events:none on the parent).
-  document.addEventListener('pointerdown', e => {
-    if (!_pState) return;
-    const dist = Math.hypot(e.clientX - _pState.cx, e.clientY - _pState.cy);
-    if (dist <= _pState.prOuter + 14) {
-      // Inside the picker — grab the pointer for a pick gesture.
-      e.stopPropagation();
-      e.preventDefault();
-      _ptrId = e.pointerId;
-      _holdTimer = null;
-      _isSwiping = false;
-    } else {
-      // Outside the picker — exit consecutive mode, let the tap fall through normally.
-      _consecutiveMode = false;
-      _hidePicker(false);
-    }
-  }, { capture: true, passive: false });
+  // Suppress long-press text selection on grid cells and their inputs.
+  const _gridEl = document.getElementById('crossword-grid');
+  _gridEl.style.userSelect = 'none';
+  _gridEl.style.setProperty('-webkit-touch-callout', 'none');
 
   document.getElementById('crossword-grid').addEventListener('pointerdown', e => {
     const cellEl = e.target.closest('.cell:not(.black)');
     if (!cellEl) return;
+    if (_pState) return;  // backdrop intercepts all touches while picker is open
     e.preventDefault();
     const r = +cellEl.dataset.row, c = +cellEl.dataset.col;
     _ptrId = e.pointerId;
