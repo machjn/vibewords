@@ -1333,22 +1333,24 @@ function _showPicker(row, col, clientX, clientY) {
     // Bar is pointer-events:none so the backdrop is the only hit-target.
     // Check whether the tap landed on the progress bar before treating it
     // as a pick gesture or an outside-tap dismissal.
-    if (_pState?.barEl) {
-      const br = _pState.barEl.getBoundingClientRect();
-      if (e.clientX >= br.left && e.clientX <= br.right &&
-          e.clientY >= br.top  && e.clientY <= br.bottom) {
-        for (const span of _pState.barEl.querySelectorAll('span[data-r]')) {
-          const sr = span.getBoundingClientRect();
-          if (e.clientX >= sr.left && e.clientX <= sr.right) {
-            const r = +span.dataset.r, c = +span.dataset.c;
-            if (r !== _pState.row || c !== _pState.col) {
-              selectCell(r, c, sel.dir);
-              _pickerReset(r, c);
+    if (_pState?.barEls) {
+      for (const barEl of _pState.barEls) {
+        const br = barEl.getBoundingClientRect();
+        if (e.clientX >= br.left && e.clientX <= br.right &&
+            e.clientY >= br.top  && e.clientY <= br.bottom) {
+          for (const span of barEl.querySelectorAll('span[data-r]')) {
+            const sr = span.getBoundingClientRect();
+            if (e.clientX >= sr.left && e.clientX <= sr.right) {
+              const r = +span.dataset.r, c = +span.dataset.c;
+              if (r !== _pState.row || c !== _pState.col) {
+                selectCell(r, c, sel.dir);
+                _pickerReset(r, c);
+              }
+              return;
             }
-            return;
           }
+          return;  // tapped bar padding — ignore
         }
-        return;  // tapped bar padding — ignore
       }
     }
     const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
@@ -1364,12 +1366,18 @@ function _showPicker(row, col, clientX, clientY) {
   svg.appendChild(g);
   document.body.appendChild(svg);
 
-  const barCells = wordCells(row, col, sel.dir);
-  const barTryY = cy + mid + 6;
-  const barY = barTryY + 44 > window.innerHeight ? cy - mid - 50 : barTryY;
-  const barEl = _createPickerBar(cx, barY, barCells);
+  const segments = _wordSegments(row, col, sel.dir);
+  const BAR_STEP = 48;
+  const totalH = segments.length * BAR_STEP;
+  const belowFits = cy + mid + 6 + totalH <= window.innerHeight;
+  const barEls = segments.map((seg, i) => {
+    const barY = belowFits
+      ? cy + mid + 6 + i * BAR_STEP
+      : cy - mid - 6 - (segments.length - i) * BAR_STEP;
+    return _createPickerBar(cx, barY, seg);
+  }).filter(Boolean);
 
-  _pState = { svg, backdropEl, sectors, labels, centerText: cTxt, cx, cy, pr: Pr, prOuter: PR, row, col, activeIdx: -1, touchedOuter: false, barEl };
+  _pState = { svg, backdropEl, sectors, labels, centerText: cTxt, cx, cy, pr: Pr, prOuter: PR, row, col, activeIdx: -1, touchedOuter: false, barEls };
   _updatePickerBar();
 }
 
@@ -1403,8 +1411,30 @@ function _updatePicker(clientX, clientY) {
   }
 }
 
+function _wordSegments(row, col, dir) {
+  const tagged = wordCellsTagged(row, col, dir);
+  const segs = [];
+  let seg = [];
+  for (let i = 0; i < tagged.length; i++) {
+    const [r, c] = tagged[i];
+    if (i === 0) {
+      seg.push([r, c]);
+    } else {
+      const [pr, pc] = tagged[i - 1];
+      if (Math.abs(r - pr) + Math.abs(c - pc) === 1) {
+        seg.push([r, c]);
+      } else {
+        segs.push(seg);
+        seg = [[r, c]];
+      }
+    }
+  }
+  if (seg.length) segs.push(seg);
+  return segs;
+}
+
 function _createPickerBar(cx, barY, cells) {
-  if (cells.length < 2) return null;
+  if (cells.length < 1) return null;
   const GAP = 3, HPAD = 14;
   const maxInner = window.innerWidth * 0.88 - HPAD * 2;
   const cellW = Math.max(14, Math.min(28, Math.floor((maxInner - GAP * (cells.length - 1)) / cells.length)));
@@ -1433,16 +1463,18 @@ function _createPickerBar(cx, barY, cells) {
 }
 
 function _updatePickerBar() {
-  if (!_pState?.barEl) return;
-  _pState.barEl.querySelectorAll('span').forEach(span => {
-    const r = +span.dataset.r, c = +span.dataset.c;
-    const key = `${r},${c}`;
-    const letter = grid[key] || pencilGrid[key] || '';
-    const isCurrent = r === _pState.row && c === _pState.col;
-    span.textContent = letter || '·';
-    span.style.color = isCurrent ? 'var(--accent,#3498db)' : (letter ? 'var(--text,#000)' : 'var(--border,#ccc)');
-    span.style.borderBottomColor = isCurrent ? 'var(--accent,#3498db)' : 'var(--border,#ccc)';
-  });
+  if (!_pState?.barEls) return;
+  for (const barEl of _pState.barEls) {
+    barEl.querySelectorAll('span').forEach(span => {
+      const r = +span.dataset.r, c = +span.dataset.c;
+      const key = `${r},${c}`;
+      const letter = grid[key] || pencilGrid[key] || '';
+      const isCurrent = r === _pState.row && c === _pState.col;
+      span.textContent = letter || '·';
+      span.style.color = isCurrent ? 'var(--accent,#3498db)' : (letter ? 'var(--text,#000)' : 'var(--border,#ccc)');
+      span.style.borderBottomColor = isCurrent ? 'var(--accent,#3498db)' : 'var(--border,#ccc)';
+    });
+  }
 }
 
 function _pickerReset(nextRow, nextCol) {
@@ -1477,7 +1509,7 @@ function _hidePicker(commit) {
     _consecutiveMode = false;
   }
 
-  if (_pState.barEl) _pState.barEl.remove();
+  _pState.barEls?.forEach(b => b.remove());
   _pState.backdropEl?.remove();
   _pState.svg.remove();
   _pState = null;
