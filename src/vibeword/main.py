@@ -202,7 +202,8 @@ class Room:
         self._cell_to_clue: Dict[str, set] = {}
         self._clue_to_cells: Dict[str, list] = {}
         self.clients: Dict[WebSocket, dict] = {}
-        self.last_activity = time.time()
+        self.created_at = time.time()
+        self.last_activity = self.created_at
         self._player_count = 0
         self._cell_to_clue, self._clue_to_cells = _build_clue_maps(puzzle)
 
@@ -563,6 +564,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         "revealed": list(room.revealed),
         "verified_clues": list(room.verified_clues),
         "users": room.users_list(),
+        "room_created_at": room.created_at,
     })
     await room.broadcast(
         {"type": "user_joined", "user_id": user_id, "color": color, "name": name},

@@ -3,6 +3,23 @@
 // ── State ──────────────────────────────────────────────────────────────────
 
 const roomId = location.pathname.split('/').pop();
+
+let _roomCreatedAt = null;
+let _roomAgeTimer  = null;
+
+function _formatRoomAge(ms) {
+  const m = Math.floor(ms / 60000);
+  const h = Math.floor(m / 60);
+  if (m < 1)  return 'started < 1m ago';
+  if (h < 1)  return `started ${m}m ago`;
+  return `started ${h}h ${m % 60}m ago`;
+}
+
+function _tickRoomAge() {
+  if (!_roomCreatedAt) return;
+  const el = document.getElementById('room-age');
+  if (el) el.textContent = _formatRoomAge(Date.now() - _roomCreatedAt);
+}
 let socket, myUserId, myColor, myName;
 let puzzle = null;
 let grid = {};         // "r,c" -> confirmed letter
@@ -119,6 +136,11 @@ function handleMessage(msg) {
       document.title = puzzle.title ? `${puzzle.title} — VibeWord` : 'VibeWord';
       updatePlayerList();
       updateActionButtons();
+      if (msg.room_created_at && !_roomAgeTimer) {
+        _roomCreatedAt = msg.room_created_at * 1000;
+        _tickRoomAge();
+        _roomAgeTimer = setInterval(_tickRoomAge, 5000);
+      }
       break;
     }
 

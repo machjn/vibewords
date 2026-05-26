@@ -4,15 +4,15 @@ Minor:
 - favicon /
 - clean up old rooms
 - show room id in rooms list /
-- fix buttons changing size on toggle due to text label length
+- fix buttons changing size on toggle due to text label length x
 - better organize buttons /
-- logo
-- deploy as github actions rather than manually
+- logo /
+- deploy as github actions rather than manually /
 - add temporary auth layer? if needed
 - make columns the default clue view /
 - make clue area wider by default /
-- address the scaling discrepancies at laptop/desktop sizes
-- pen/pencil toggle button could be icons rather than text?
+- address the scaling discrepancies at laptop/desktop sizes /
+- pen/pencil toggle button could be icons rather than text? /
 - copy link -> copy room link /
 - room connection indictator should be right most, should display some text like connected/disconnected on mouseover /
 - room should be a button-like element with text "Room <room id>", and the indicator inside. clicking on it creates a small submenu that lets you copy the link to the current room and also provides a link to the rooms page. /
@@ -20,7 +20,7 @@ Minor:
 - test proper error handling in case of malformed ipuz file etc.
 - assess exposure to injection attacks?
 - add some tests for scrapers etc.
-- the landing page could be clearer i.e. 'create a room' section. Browse rooms should be at the top.
+- the landing page could be clearer i.e. 'create a room' section. Browse rooms should be at the top. /
 - issue with composite clues in e.g. Cryptic crossword No 30,013 (fixed) /
 - export should be implemented on the backend rather than the frontend, on the Puzzle object, so it can be reused by other components
 - about page, link to github /
@@ -29,11 +29,12 @@ Minor:
 - collapse controls to icons? /
 - fix mobile bug where calendar widget doesn't display Or is this just a firefox responsive design mode limitation/bug? /
 - bug where not all dots shown in chip. Couldn't reproduce
-- could have icons pen/pencil/hand modes, then select between the 3. Hand mode lets you select without opening keyboard
+- could have icons pen/pencil/hand modes, then select between the 3. Hand mode lets you select without opening keyboard x
 - capture colour palette, create themes /
-- background image on landing page?
+- background image on landing page? /
 - show room timer in room dropdown?
-- abstract application config like wheel delay hold, drift etc. into a yaml config file that the application reads at startup
+- abstract application config like wheel delay hold, drift etc. into a yaml config file that the application reads at startup /
+- room dropdown menu width should match the element width, this has some implications for its contents
 
 Major:
 - Add other scrapers
