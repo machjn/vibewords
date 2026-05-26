@@ -1329,9 +1329,30 @@ function _showPicker(row, col, clientX, clientY) {
   backdropEl.style.cssText = 'position:fixed;inset:0;z-index:498;touch-action:none;pointer-events:auto;background:transparent';
   backdropEl.addEventListener('pointerdown', e => {
     if (_ptrId !== null) return;  // existing gesture in progress
+    e.preventDefault();
+    // Bar is pointer-events:none so the backdrop is the only hit-target.
+    // Check whether the tap landed on the progress bar before treating it
+    // as a pick gesture or an outside-tap dismissal.
+    if (_pState?.barEl) {
+      const br = _pState.barEl.getBoundingClientRect();
+      if (e.clientX >= br.left && e.clientX <= br.right &&
+          e.clientY >= br.top  && e.clientY <= br.bottom) {
+        for (const span of _pState.barEl.querySelectorAll('span[data-r]')) {
+          const sr = span.getBoundingClientRect();
+          if (e.clientX >= sr.left && e.clientX <= sr.right) {
+            const r = +span.dataset.r, c = +span.dataset.c;
+            if (r !== _pState.row || c !== _pState.col) {
+              selectCell(r, c, sel.dir);
+              _pickerReset(r, c);
+            }
+            return;
+          }
+        }
+        return;  // tapped bar padding — ignore
+      }
+    }
     const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
     if (dist <= PR + 14) {
-      e.preventDefault();
       _ptrId = e.pointerId;
     } else {
       _consecutiveMode = false;
