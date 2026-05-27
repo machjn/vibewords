@@ -33,7 +33,7 @@ jobs:
 
       - name: Build and push image
         env:
-          REGISTRY: europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword
+          REGISTRY: europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords
           TAG: ${{ steps.version.outputs.image_tag }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -44,8 +44,8 @@ jobs:
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy vibeword \
-            --image europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword:${{ steps.version.outputs.image_tag }} \
+          gcloud run deploy vibewords \
+            --image europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords:${{ steps.version.outputs.image_tag }} \
             --platform managed \
             --region europe-west2 \
             --timeout 3600 \

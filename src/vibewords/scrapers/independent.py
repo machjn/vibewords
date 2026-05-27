@@ -69,7 +69,7 @@ from datetime import date
 from typing import Any
 from urllib.request import Request, urlopen
 
-from vibeword.scrapers import Scraper
+from vibewords.scrapers import Scraper
 
 
 BLOCK = "#"
@@ -89,7 +89,7 @@ def puzzle_url_for_date(d: date) -> str:
 
 
 def fetch_puzzle_xml(url: str) -> str:
-    req = Request(url, headers={"User-Agent": "vibeword/0.1 (+personal use)"})
+    req = Request(url, headers={"User-Agent": "vibewords/0.1 (+personal use)"})
     try:
         with urlopen(req, timeout=30) as resp:
             return resp.read().decode(resp.headers.get_content_charset() or "utf-8")

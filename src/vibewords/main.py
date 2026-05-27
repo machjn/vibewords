@@ -18,12 +18,12 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from vibeword.config import load_config
-from vibeword.ipuz_parser import Puzzle, parse_ipuz
-from vibeword.scrapers.guardian import GuardianScraper
-from vibeword.scrapers.guardian import ScraperError as _GuardianScraperError
-from vibeword.scrapers.independent import IndependentScraper
-from vibeword.scrapers.independent import ScraperError as _IndependentScraperError
+from vibewords.config import load_config
+from vibewords.ipuz_parser import Puzzle, parse_ipuz
+from vibewords.scrapers.guardian import GuardianScraper
+from vibewords.scrapers.guardian import ScraperError as _GuardianScraperError
+from vibewords.scrapers.independent import IndependentScraper
+from vibewords.scrapers.independent import ScraperError as _IndependentScraperError
 
 ScraperError = (_GuardianScraperError, _IndependentScraperError)
 
@@ -57,7 +57,7 @@ _SCRAPERS = {k: v for k, v in _ALL_SCRAPERS.items() if v["source"] in cfg.connec
 _log_level_name = cfg.server.log_level
 _log_level = getattr(logging, _log_level_name, logging.INFO)
 
-logger = logging.getLogger("vibeword")
+logger = logging.getLogger("vibewords")
 logger.propagate = False
 logger.setLevel(_log_level)
 
@@ -67,7 +67,7 @@ async def lifespan(app: FastAPI):
     # Borrow uvicorn's handler so our messages use the same format as uvicorn's own logs.
     for handler in logging.getLogger("uvicorn").handlers:
         logger.addHandler(handler)
-    logger.info("VibeWord starting | log_level=%s", _log_level_name)
+    logger.info("VibeWords starting | log_level=%s", _log_level_name)
     logger.info("Config:\n%s", cfg)
     yield
 
@@ -295,7 +295,7 @@ def _fetch_fifteensquared_url(source_url: str) -> str:
             f"https://www.fifteensquared.net/wp-json/wp/v2/posts"
             f"?search={quote(query)}&per_page=5&_fields=link,title,slug"
         )
-        req = Request(api_url, headers={"User-Agent": "vibeword/0.1 (+personal use)"})
+        req = Request(api_url, headers={"User-Agent": "vibewords/0.1 (+personal use)"})
         last_exc: Exception | None = None
         for attempt in range(2):
             try:

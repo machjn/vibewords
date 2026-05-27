@@ -133,7 +133,7 @@ function handleMessage(msg) {
         srcLink.style.display = 'none';
       }
       updateSolutionsLink(puzzle.solutions_url);
-      document.title = puzzle.title ? `${puzzle.title} — VibeWord` : 'VibeWord';
+      document.title = puzzle.title ? `${puzzle.title} — VibeWords` : 'VibeWords';
       updatePlayerList();
       updateActionButtons();
       if (msg.room_created_at && !_roomAgeTimer) {
@@ -993,7 +993,7 @@ function exportIpuz() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = `${(puzzle.title || 'vibeword').replace(/[^a-z0-9]/gi, '_')}.ipuz`;
+  a.download = `${(puzzle.title || 'vibewords').replace(/[^a-z0-9]/gi, '_')}.ipuz`;
   a.click();
   URL.revokeObjectURL(url);
 }

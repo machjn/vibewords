@@ -35,6 +35,18 @@ Minor:
 - show room timer in room dropdown?
 - abstract application config like wheel delay hold, drift etc. into a yaml config file that the application reads at startup /
 - room dropdown menu width should match the element width, this has some implications for its contents
+- add publish date to room menu
+- bug: when entering text before an already filled cell, that cell gets highlighted. kinda of makes sense but not the behaviour we want.
+- right-click on name chip to randomize colour
+- bug: clipping when scrolling clue panel
+- slightly increase author size?
+- in pencil mode, do we want to skip over cells that are already filled when moving on to next cell?
+- bug: the logo is clickable throught the entire left side of the top bar for some reason
+- bug: clicking outside of the crossword, e.g. in empty space or on a UI element, causes the crossword to become inactive and not recieve keyboard input
+- wheel should be largely translucent with letters displayed in solid ring around edge
+- bug: pressing and holding on a cell often inputs on the previous cell
+- bug: weird asymmetrical behaviour with two identical tabs open. one sees 2 players, the other 1
+- cross out clues that are completed
 
 Major:
 - Add other scrapers
@@ -52,6 +64,7 @@ Ideas:
 - probably should in the long-term have the fifteen-squared scraper gather all the data it can (i.e. including answers and clues), then have the grid reconstructor extract from that only the data it needs to reconstruct the grid
 - put the pieces together: use the reconstructed grid and the clues/answers to construct a full puzzle object from fifteensquared. then add a script which does this and exports it to ipuz
 - make crossword surround be drawable? How would this work on mobile though?
+- associate themes with parlance, which are basically different sets of text strings. e.g. in neon theme, 'themes' are 'vibes', reveal is 'small/big cheat?', "Clear" is "nah", check is "guess", 
 
 ## Reverse Engineering Grids
 

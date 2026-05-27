@@ -25,7 +25,7 @@ import urllib.request
 from html.parser import HTMLParser
 from typing import Optional
 
-from vibeword.grid_reconstructor import WordSpec
+from vibewords.grid_reconstructor import WordSpec
 
 
 # ---------------------------------------------------------------------------

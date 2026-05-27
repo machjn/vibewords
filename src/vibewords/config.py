@@ -67,7 +67,7 @@ def _apply_dict(section_obj: Any, data: dict) -> None:
 
 
 def _apply_env(section_name: str, section_obj: Any) -> None:
-    prefix = f"VIBEWORD_{section_name.upper()}_"
+    prefix = f"VIBEWORDS_{section_name.upper()}_"
     for f in fields(section_obj):
         env_key = prefix + f.name.upper()
         val = os.environ.get(env_key)
@@ -83,7 +83,7 @@ def _apply_env(section_name: str, section_obj: Any) -> None:
 def load_config() -> Config:
     cfg = Config()
 
-    config_path_env = os.environ.get("VIBEWORD_CONFIG")
+    config_path_env = os.environ.get("VIBEWORDS_CONFIG")
     candidates = ([Path(config_path_env)] if config_path_env else []) + [Path("config.yaml")]
 
     raw: dict = {}

@@ -11,4 +11,4 @@ COPY config.yaml .
 
 ENV PORT=8080
 
-CMD uvicorn vibeword.main:app --host 0.0.0.0 --port ${PORT}
+CMD uvicorn vibewords.main:app --host 0.0.0.0 --port ${PORT}

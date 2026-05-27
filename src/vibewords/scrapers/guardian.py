@@ -29,7 +29,7 @@ from datetime import date, timedelta
 from typing import Any
 from urllib.request import Request, urlopen
 
-from vibeword.scrapers import Scraper
+from vibewords.scrapers import Scraper
 
 
 BLOCK = "#"
@@ -73,7 +73,7 @@ def fetch_crossword_data(page_url: str) -> dict[str, Any]:
     req = Request(
         json_url,
         headers={
-            "User-Agent": "vibeword/0.1 (+personal use)",
+            "User-Agent": "vibewords/0.1 (+personal use)",
             "Accept": "application/json,text/html",
         },
     )
@@ -99,7 +99,7 @@ def fetch_crossword_data(page_url: str) -> dict[str, Any]:
 def _fetch_series_listing(crossword_type: str = "cryptic") -> str:
     """Return the HTML blob from the Guardian series listing endpoint for the given type."""
     url = f"{_GUARDIAN_BASE}/crosswords/series/{crossword_type}.json"
-    req = Request(url, headers={"User-Agent": "vibeword/0.1 (+personal use)", "Accept": "application/json"})
+    req = Request(url, headers={"User-Agent": "vibewords/0.1 (+personal use)", "Accept": "application/json"})
     try:
         with urlopen(req, timeout=30) as resp:
             return json.loads(resp.read()).get("html", "")

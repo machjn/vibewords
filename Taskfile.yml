@@ -1,18 +1,18 @@
 version: '3'
 
 vars:
-  REGISTRY: europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword
+  REGISTRY: europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords
   REGION: europe-west2
-  DEFAULT_SERVICE: vibeword
+  DEFAULT_SERVICE: vibewords
 
 tasks:
   dev:
     desc: Run the dev server with live reload
-    cmd: uvicorn vibeword.main:app --reload
+    cmd: uvicorn vibewords.main:app --reload
 
   dev:debug:
     desc: Run the dev server with debug logging
-    cmd: LOG_LEVEL=DEBUG uvicorn vibeword.main:app --reload
+    cmd: LOG_LEVEL=DEBUG uvicorn vibewords.main:app --reload
 
   install:
     desc: Install the package in editable mode

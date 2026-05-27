@@ -585,7 +585,7 @@ def parse_clue_length(clue_text: str) -> Optional[int]:
 
 def specs_from_puzzle(puzzle) -> list[WordSpec]:
     """
-    Extract WordSpecs from a parsed Puzzle (vibeword.ipuz_parser.Puzzle).
+    Extract WordSpecs from a parsed Puzzle (vibewords.ipuz_parser.Puzzle).
 
     Word lengths are measured directly from the grid, so this works even when
     the clue text doesn't contain a length indicator.  Use this to test the
@@ -634,8 +634,8 @@ def main() -> None:
     if len(sys.argv) < 2:
         print(
             "Usage:\n"
-            "  python -m vibeword.grid_reconstructor <puzzle.ipuz> [N]\n"
-            "  python -m vibeword.grid_reconstructor <fifteensquared-url> [N]",
+            "  python -m vibewords.grid_reconstructor <puzzle.ipuz> [N]\n"
+            "  python -m vibewords.grid_reconstructor <fifteensquared-url> [N]",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -643,7 +643,7 @@ def main() -> None:
     arg = sys.argv[1]
 
     if arg.startswith("http://") or arg.startswith("https://"):
-        from vibeword.scrapers.fifteensquared import specs_from_fifteensquared
+        from vibewords.scrapers.fifteensquared import specs_from_fifteensquared
         print(f"Fetching clues from {arg} …")
         specs = specs_from_fifteensquared(arg)
         title = arg
@@ -651,7 +651,7 @@ def main() -> None:
     else:
         with open(arg) as f:
             raw = json.load(f)
-        from vibeword.ipuz_parser import parse_ipuz
+        from vibewords.ipuz_parser import parse_ipuz
         puzzle = parse_ipuz(raw)
         specs = specs_from_puzzle(puzzle)
         title = puzzle.title

@@ -1,4 +1,4 @@
-# VibeWord
+# VibeWords
 
 Collaborative crossword solving in real time. Multiple players share a room, see each other's cursors and highlights, and solve together.
 
@@ -17,14 +17,14 @@ pip install -e .
 ## Running locally
 
 ```bash
-uvicorn vibeword.main:app --reload
+uvicorn vibewords.main:app --reload
 ```
 
 Open http://localhost:8000.
 
 ## Configuration
 
-Configuration is read from `config.yaml` in the working directory (override the path with `VIBEWORD_CONFIG`). Any option can also be set via environment variable using the pattern `VIBEWORD_<SECTION>_<FIELD>` — env vars take precedence over the file.
+Configuration is read from `config.yaml` in the working directory (override the path with `VIBEWORDS_CONFIG`). Any option can also be set via environment variable using the pattern `VIBEWORDS_<SECTION>_<FIELD>` — env vars take precedence over the file.
 
 ```yaml
 server:
@@ -48,10 +48,10 @@ Examples:
 
 ```bash
 # Use a different config file
-VIBEWORD_CONFIG=config.prod.yaml uvicorn vibeword.main:app
+VIBEWORDS_CONFIG=config.prod.yaml uvicorn vibewords.main:app
 
 # Enable debug logging without editing the file
-VIBEWORD_SERVER_LOG_LEVEL=DEBUG uvicorn vibeword.main:app --reload
+VIBEWORDS_SERVER_LOG_LEVEL=DEBUG uvicorn vibewords.main:app --reload
 ```
 
 ## Guardian scraper (standalone)
@@ -82,15 +82,15 @@ gcloud auth configure-docker europe-west2-docker.pkg.dev
 Build and push container image:
 
 ```
-docker build . -t europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword:0.1.0
-docker push europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword:0.1.0
+docker build . -t europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords:0.1.0
+docker push europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords:0.1.0
 ```
 
 Deploy to GCP, either via the console or:
 
 ```bash
-gcloud run deploy vibeword \
-  --image europe-west2-docker.pkg.dev/vibeword/vibeword/vibeword:0.2.0 \
+gcloud run deploy vibewords \
+  --image europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords:0.2.0 \
   --platform managed \
   --region europe-west2 \
   --timeout 3600 \

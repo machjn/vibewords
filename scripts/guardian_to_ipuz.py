@@ -13,7 +13,7 @@ import json
 import sys
 from pathlib import Path
 
-from vibeword.scrapers.guardian import GuardianScraper, ScraperError
+from vibewords.scrapers.guardian import GuardianScraper, ScraperError
 
 
 def main(argv: list[str] | None = None) -> int:
