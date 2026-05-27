@@ -29,11 +29,11 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker europe-west2-docker.pkg.dev --quiet
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
 
       - name: Build and push image
         env:
-          REGISTRY: europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords
+          REGISTRY: europe-west1-docker.pkg.dev/vibewords-0/vibewords/vibewords
           TAG: ${{ steps.version.outputs.image_tag }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -45,9 +45,9 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy vibewords \
-            --image europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords:${{ steps.version.outputs.image_tag }} \
+            --image europe-west1-docker.pkg.dev/vibewords-0/vibewords/vibewords:${{ steps.version.outputs.image_tag }} \
             --platform managed \
-            --region europe-west2 \
+            --region europe-west1 \
             --timeout 3600 \
             --allow-unauthenticated \
             --min-instances=1 \

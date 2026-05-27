@@ -1,8 +1,8 @@
 version: '3'
 
 vars:
-  REGISTRY: europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords
-  REGION: europe-west2
+  REGISTRY: europe-west1-docker.pkg.dev/vibewords-0/vibewords/vibewords
+  REGION: europe-west1
   DEFAULT_SERVICE: vibewords
 
 tasks:

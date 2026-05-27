@@ -75,7 +75,7 @@ Authenticate to gcloud and configure docker to authenticate to the GCP Artifact 
 
 ```shell-script
 gcloud auth login
-gcloud config set project vibeword
+gcloud config set project vibewords-0
 gcloud auth configure-docker europe-west2-docker.pkg.dev
 ```
 
