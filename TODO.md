@@ -52,6 +52,7 @@ Minor:
 - add auto-generated crossword connector?
 - add home-cooked connector? /
 - add puzzle type?
+- proper adherence to the ipuz API? Though it can be vague, we should at least set type correctly.
 
 Major:
 - Add other scrapers

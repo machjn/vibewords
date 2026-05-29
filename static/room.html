@@ -48,6 +48,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
+      min-width: 210px;
       padding: 0.2rem 0.55rem;
       border-radius: 6px;
       background: var(--surface-3);
@@ -89,6 +90,7 @@
       font-size: 0.55rem;
       color: var(--text-3);
       flex-shrink: 0;
+      margin-left: auto;
       transition: transform 0.15s;
       line-height: 1;
     }
@@ -101,7 +103,8 @@
       position: absolute;
       top: calc(100% + 6px);
       left: 0;
-      min-width: 210px;
+      width: 100%;
+      box-sizing: border-box;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -138,6 +141,8 @@
       transition: background 0.15s;
     }
     .room-chip-action:hover { background: var(--surface-hover); }
+    #rename-room-input { width: 100%; box-sizing: border-box; }
+    #rename-room-input:focus { outline: none; border-color: var(--accent); }
     .room-chip-link {
       display: block;
       padding: 0.2rem 0.6rem;
@@ -673,6 +678,9 @@
       <div class="room-chip-panel">
         <div class="room-chip-id">Room <code id="room-id-display"></code></div>
         <div id="room-age" class="room-chip-link muted" style="cursor:default"></div>
+        <button id="rename-room-btn" class="room-chip-action">&#9998; Rename room</button>
+        <input id="rename-room-input" class="room-chip-action" type="text" maxlength="60"
+               autocomplete="off" spellcheck="false" placeholder="Room name" style="display:none">
         <button id="share-btn" class="room-chip-action">Copy Room Link</button>
         <button id="export-btn" class="room-chip-action">&#11015; Export .ipuz</button>
         <a id="source-link" href="/rooms" class="room-chip-link" target="_blank" rel="noopener" style="display:none">Original puzzle</a>

@@ -22,6 +22,7 @@ function _tickRoomAge() {
 }
 let socket, myUserId, myColor, myName;
 let puzzle = null;
+let roomName = null;   // custom room name; falls back to the puzzle title when null
 let grid = {};         // "r,c" -> confirmed letter
 let pencilGrid = {};   // "r,c" -> tentative letter
 let revealedCells = new Set();
@@ -118,10 +119,8 @@ function handleMessage(msg) {
         if (u.user_id !== myUserId && u.cursor)
           showUserSelection(u.user_id, u.color, u.cursor.row, u.cursor.col, u.cursor.direction);
       });
-      const titleEl = document.getElementById('puzzle-title');
-      titleEl.dataset.full  = puzzle.title       || 'Untitled';
-      titleEl.dataset.short = puzzle.short_title || puzzle.title || 'Untitled';
-      _applyTitleLength();
+      roomName = msg.room_name || null;
+      applyRoomTitle();
       const authorEl = document.getElementById('puzzle-author');
       authorEl.textContent = puzzle.author ? `By ${puzzle.author}` : '';
       authorEl.style.display = puzzle.author ? '' : 'none';
@@ -133,7 +132,6 @@ function handleMessage(msg) {
         srcLink.style.display = 'none';
       }
       updateSolutionsLink(puzzle.solutions_url);
-      document.title = puzzle.title ? `${puzzle.title} — VibeWords` : 'VibeWords';
       updatePlayerList();
       updateActionButtons();
       if (msg.room_created_at && !_roomAgeTimer) {
@@ -178,6 +176,11 @@ function handleMessage(msg) {
     case 'renamed':
       if (users[msg.user_id]) users[msg.user_id].name = msg.name;
       updatePlayerList();
+      break;
+
+    case 'room_renamed':
+      roomName = msg.name || null;
+      applyRoomTitle();
       break;
 
     case 'pointer_move':
@@ -1017,6 +1020,38 @@ document.getElementById('share-btn').addEventListener('click', async () => {
   } catch { prompt('Share this link:', location.href); }
 });
 
+// Rename room: the dropdown button swaps into an inline text field, committing on
+// Enter/blur and cancelling on Escape (blank reverts to the puzzle title).
+const _renameBtn   = document.getElementById('rename-room-btn');
+const _renameInput = document.getElementById('rename-room-input');
+
+function _openRoomRename() {
+  _renameInput.value = roomName || '';
+  _renameInput.placeholder = (puzzle && puzzle.title) || 'Room name';
+  _renameBtn.style.display = 'none';
+  _renameInput.style.display = '';
+  _renameInput.focus();
+  _renameInput.select();
+}
+
+function _closeRoomRename(commit) {
+  if (_renameInput.style.display === 'none') return;  // already closed
+  if (commit) {
+    const next = _renameInput.value.trim().slice(0, 60);
+    if (next !== (roomName || '')) send({ type: 'rename_room', name: next });
+  }
+  _renameInput.style.display = 'none';
+  _renameBtn.style.display = '';
+}
+
+_renameBtn.addEventListener('click', _openRoomRename);
+_renameInput.addEventListener('blur', () => _closeRoomRename(true));
+_renameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter')  { e.preventDefault(); _closeRoomRename(true); }
+  if (e.key === 'Escape') { e.preventDefault(); _closeRoomRename(false); }
+  e.stopPropagation();  // don't let typing reach the crossword grid
+});
+
 document.getElementById('room-id-display').textContent = roomId;
 
 function updateSolutionsLink(url) {
@@ -1170,6 +1205,18 @@ window.addEventListener('resize', () => {
   clearTimeout(_fitTimer);
   _fitTimer = setTimeout(fitGridToScreen, 150);
 });
+
+// Sets the header chip + document titles, preferring a custom room name over the
+// puzzle title. Called on sync and whenever the room is renamed.
+function applyRoomTitle() {
+  const titleEl = document.getElementById('puzzle-title');
+  if (!titleEl || !puzzle) return;
+  titleEl.dataset.full  = roomName || puzzle.title || 'Untitled';
+  titleEl.dataset.short = roomName || puzzle.short_title || puzzle.title || 'Untitled';
+  _applyTitleLength();
+  const docName = roomName || puzzle.title;
+  document.title = docName ? `${docName} — VibeWords` : 'VibeWords';
+}
 
 // Switch puzzle title to short form when the header chip gets tight
 const _titleMQ = window.matchMedia('(max-width: 600px)');

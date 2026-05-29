@@ -191,6 +191,7 @@ def _build_clue_maps(puzzle: Puzzle):
 class Room:
     def __init__(self, puzzle: Puzzle):
         self.puzzle = puzzle
+        self.name: Optional[str] = None  # custom room name; falls back to puzzle title
         self.grid: Dict[str, str] = {}
         self.pencil_grid: Dict[str, str] = {}
         self.revealed: set = set()
@@ -545,7 +546,7 @@ async def list_rooms():
     return [
         {
             "room_id": room_id,
-            "title": room.puzzle.title or "Untitled",
+            "title": room.name or room.puzzle.title or "Untitled",
             "author": room.puzzle.author or "",
             "width": room.puzzle.width,
             "height": room.puzzle.height,
@@ -603,6 +604,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         "user_id": user_id,
         "color": color,
         "name": name,
+        "room_name": room.name,
         "puzzle": room.puzzle_dict(),
         "grid": room.grid,
         "pencil_grid": room.pencil_grid,
@@ -698,6 +700,13 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                         {"type": "renamed", "user_id": user_id, "name": new_name},
                         exclude=websocket,
                     )
+
+            elif msg_type == "rename_room":
+                old_name = room.name
+                new_name = str(data.get("name", "")).strip()[:60]
+                room.name = new_name or None
+                logger.info("[%s] %s renamed room: %r → %r", room_id, user_id, old_name, room.name)
+                await room.broadcast({"type": "room_renamed", "name": room.name or ""})
 
             elif msg_type == "word_correct":
                 key = str(data.get("key", ""))

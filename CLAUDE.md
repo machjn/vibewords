@@ -43,6 +43,7 @@ On join, the server sends a `sync` message with the full puzzle, current grid st
 | `cursor_move` | `cursor_move` |
 | `pointer_move` / `pointer_clear` | same |
 | `rename` | `renamed` |
+| `rename_room` | `room_renamed` (broadcast to all) |
 | `word_correct` | `clue_verified` (if valid) |
 
 Clue verification uses `_build_clue_maps()` in `main.py`, which pre-computes two lookup tables: `cell_to_clue` (for fast invalidation on cell edits) and `clue_to_cells` (for validating a `word_correct` claim against the solution). Composite/linked clues (e.g. "25 and 11 down") are collapsed to a single primary key (`a-25`) covering all cells in the chain.
