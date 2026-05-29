@@ -304,6 +304,10 @@
     .cell input.word-correct { color: var(--correct); }
     .clue-item.word-correct { color: var(--correct); font-weight: 600; }
 
+    /* Crossing-out filled clues (client-side display toggle) */
+    .clue-item.filled { opacity: 0.5; }
+    .clue-item.filled.filled-firm { text-decoration: line-through; }
+
     /* ── Main layout ── */
     .main {
       display: flex;
@@ -722,6 +726,7 @@
       <div id="settings-panel">
         <button id="show-pencil-btn" class="settings-item active">Show pencil marks</button>
         <button id="others-btn" class="settings-item active">Show other players</button>
+        <button id="crossout-btn" class="settings-item active">Cross out filled clues</button>
       </div>
     </div>
   </div>

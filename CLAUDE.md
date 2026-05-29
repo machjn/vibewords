@@ -58,4 +58,4 @@ GitHub Actions builds a Docker image on push to `main` and deploys to GCP Cloud 
 
 ## Development
 
-All commands should be run inside a python virtualenv
+All python commands MUST be run inside a python virtualenv. Do NOT touch system python

@@ -32,9 +32,9 @@ Minor:
 - could have icons pen/pencil/hand modes, then select between the 3. Hand mode lets you select without opening keyboard x
 - capture colour palette, create themes /
 - background image on landing page? /
-- show room timer in room dropdown?
+- show room timer in room dropdown? /
 - abstract application config like wheel delay hold, drift etc. into a yaml config file that the application reads at startup /
-- room dropdown menu width should match the element width, this has some implications for its contents
+- room dropdown menu width should match the element width, this has some implications for its contents /
 - add publish date to room menu
 - bug: when entering text before an already filled cell, that cell gets highlighted. kinda of makes sense but not the behaviour we want.
 - right-click on name chip to randomize colour
@@ -46,12 +46,12 @@ Minor:
 - wheel should be largely translucent with letters displayed in solid ring around edge
 - bug: pressing and holding on a cell often inputs on the previous cell
 - bug: weird asymmetrical behaviour with two identical tabs open. one sees 2 players, the other 1
-- cross out clues that are completed
-- custom name for a room
+- cross out clues that are completed /
+- custom name for a room /
 - connector tabs on landing page? /
 - add auto-generated crossword connector?
 - add home-cooked connector? /
-- add puzzle type?
+- add puzzle type? x
 - proper adherence to the ipuz API? Though it can be vague, we should at least set type correctly.
 
 Major:

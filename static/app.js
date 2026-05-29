@@ -31,6 +31,8 @@ let sel = { row: -1, col: -1, dir: 'across' };
 let pencilMode = false;
 let showOthers = true;
 let verifiedClues = new Set(); // "a-5" / "d-12" — words confirmed correct (shared via server)
+let crossoutEnabled = true;    // client-only: whether this player displays filled-clue crossouts (on by default)
+let clueFill = {};             // "a-5" -> 'pencil' | 'firm' — authoritative fill state from server
 
 const IS_COARSE = window.matchMedia('(pointer: coarse)').matches;
 
@@ -107,6 +109,7 @@ function handleMessage(msg) {
       pencilGrid  = msg.pencil_grid || {};
       revealedCells = new Set(msg.revealed || []);
       verifiedClues = new Set(msg.verified_clues || []);
+      clueFill = msg.clue_fill || {};
       msg.users.forEach(u => {
         if (u.user_id !== myUserId)
           users[u.user_id] = { color: u.color, name: u.name, cursor: u.cursor };
@@ -115,6 +118,7 @@ function handleMessage(msg) {
       renderClues();
       applyGrid();
       verifiedClues.forEach(key => _renderVerifiedClue(key));
+      applyCrossout();
       msg.users.forEach(u => {
         if (u.user_id !== myUserId && u.cursor)
           showUserSelection(u.user_id, u.color, u.cursor.row, u.cursor.col, u.cursor.direction);
@@ -193,6 +197,13 @@ function handleMessage(msg) {
 
     case 'clue_verified':
       verifyClue(msg.key);
+      break;
+
+    case 'clue_fill':
+      Object.entries(msg.states).forEach(([key, st]) => {
+        if (st === 'none') delete clueFill[key]; else clueFill[key] = st;
+        _renderClueFill(key); // reads updated clueFill; 'none' → removes classes
+      });
       break;
 
     case 'solutions_url':
@@ -346,6 +357,25 @@ function verifyClue(key) {
 function unverifyClue(key) {
   verifiedClues.delete(key);
   _renderVerifiedClue(key);
+}
+
+// ── Filled-clue crossout (server-tracked state, client-side display toggle) ──
+
+// Apply/remove filled-clue CSS for a clue key based on clueFill + the local toggle.
+function _renderClueFill(key) {
+  const { dir, num } = _parseClueKey(key);
+  const state = crossoutEnabled ? clueFill[key] : undefined; // 'pencil' | 'firm' | undefined
+  chainEntries(getChain(num, dir), dir).forEach(({ num: cn, dir: cd }) => {
+    const el = document.getElementById(`clue-${cd[0]}-${cn}`);
+    if (!el) return;
+    el.classList.toggle('filled', !!state);
+    el.classList.toggle('filled-firm', state === 'firm');
+  });
+}
+
+// Re-render every known fill state (used on sync and when the toggle flips).
+function applyCrossout() {
+  Object.keys(clueFill).forEach(_renderClueFill);
 }
 
 // Withdraws verification for any verified word containing (r,c) that is no longer correct.
@@ -988,6 +1018,12 @@ function togglePencilVisibility() {
   btn.classList.toggle('active', !hidden);
 }
 
+function toggleCrossout() {
+  crossoutEnabled = !crossoutEnabled;
+  document.getElementById('crossout-btn').classList.toggle('active', crossoutEnabled);
+  applyCrossout();
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function getInput(r, c) { return document.querySelector(`input[data-row="${r}"][data-col="${c}"]`); }
@@ -1001,6 +1037,7 @@ function solutionAt(r, c) { return ((puzzle.solution[r] || [])[c] || '').toUpper
 document.getElementById('pencil-btn').addEventListener('click', togglePencil);
 document.getElementById('show-pencil-btn').addEventListener('click', togglePencilVisibility);
 document.getElementById('others-btn').addEventListener('click', toggleOthers);
+document.getElementById('crossout-btn').addEventListener('click', toggleCrossout);
 document.getElementById('reveal-letter-btn').addEventListener('click', revealLetter);
 document.getElementById('reveal-word-btn').addEventListener('click', revealWord);
 document.getElementById('check-btn').addEventListener('click', checkWord);

@@ -196,6 +196,7 @@ class Room:
         self.pencil_grid: Dict[str, str] = {}
         self.revealed: set = set()
         self.verified_clues: set = set()
+        self.clue_fill: Dict[str, str] = {}  # primary clue key -> 'pencil' | 'firm' (absent = not filled)
         self.solutions_url: Optional[str] = None  # None=searching, ""=not found, url=found
         self._cell_to_clue: Dict[str, set] = {}
         self._clue_to_cells: Dict[str, list] = {}
@@ -204,6 +205,36 @@ class Room:
         self.last_activity = self.created_at
         self._player_count = 0
         self._cell_to_clue, self._clue_to_cells = _build_clue_maps(puzzle)
+
+    def _clue_state(self, clue_key: str) -> Optional[str]:
+        """Fill state of a clue: 'firm' (all confirmed), 'pencil' (filled, >=1 pencil),
+        or None (not all cells filled)."""
+        cells = self._clue_to_cells.get(clue_key, [])
+        if not cells:
+            return None
+        has_pencil = False
+        for ck in cells:
+            if ck in self.grid:
+                continue
+            if ck in self.pencil_grid:
+                has_pencil = True
+            else:
+                return None  # an empty cell -> not filled
+        return 'pencil' if has_pencil else 'firm'
+
+    def recompute_clue_fill(self, clue_keys) -> dict:
+        """Update self.clue_fill for the given keys; return {key: state|'none'} delta."""
+        delta = {}
+        for key in clue_keys:
+            state = self._clue_state(key)
+            if state != self.clue_fill.get(key):
+                if state is None:
+                    self.clue_fill.pop(key, None)
+                    delta[key] = 'none'
+                else:
+                    self.clue_fill[key] = state
+                    delta[key] = state
+        return delta
 
     def next_color(self) -> str:
         used = {info["color"] for info in self.clients.values()}
@@ -360,6 +391,7 @@ def _make_room(puzzle: Puzzle, source: str = "upload") -> str:
                 if letter:
                     room.grid[f"{r},{c}"] = letter
                     saved_count += 1
+    room.recompute_clue_fill(room._clue_to_cells.keys())  # seed fill state from saved letters
     rooms[room_id] = room
     logger.info(
         "Room %s created | source=%s | title=%r | size=%dx%d | saved_cells=%d",
@@ -610,6 +642,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         "pencil_grid": room.pencil_grid,
         "revealed": list(room.revealed),
         "verified_clues": list(room.verified_clues),
+        "clue_fill": room.clue_fill,
         "users": room.users_list(),
         "room_created_at": room.created_at,
     })
@@ -651,13 +684,17 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                     room.revealed.discard(key)
                     logger.debug("[%s] %s cell (%d,%d) cleared", room_id, user_id, row, col)
                 # Invalidate any verified clues that include this cell.
-                for clue_key in room._cell_to_clue.get(key, set()):
+                affected = room._cell_to_clue.get(key, set())
+                for clue_key in affected:
                     room.verified_clues.discard(clue_key)
+                fill_delta = room.recompute_clue_fill(affected)
                 await room.broadcast(
                     {"type": "cell_update", "row": row, "col": col, "value": value,
                      "pencil": pencil, "revealed": revealed, "user_id": user_id},
                     exclude=websocket,
                 )
+                if fill_delta:
+                    await room.broadcast({"type": "clue_fill", "states": fill_delta})
 
             elif msg_type == "cursor_move":
                 cursor = {"row": data.get("row"), "col": data.get("col"),
