@@ -17,9 +17,17 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 2rem;
-      padding: 1.5rem 1rem;
+      /* Place the fixed top region (logo → tab bar) above the centre line so that,
+         with the tab content flowing below it, the whole composition reads as
+         centred. --above-centre (set in JS) is how much to sit above 50vh: the
+         whole top region when tabbed — so the tab bar (the seam to the variable
+         content) lands on the centre line — or half the card when there are no
+         tabs (plain centring). Content below the seam just extends downward, so
+         switching tabs or a growing list never moves anything above it. max()
+         keeps a minimum top padding on short viewports. */
+      padding: max(1.5rem, calc(50vh - var(--above-centre, 0px))) 1rem 1.5rem;
     }
 
     .logo {
@@ -257,6 +265,7 @@
       .input-row { flex-wrap: wrap; }
       .input-row .btn { width: 100%; }
     }
+
 
     html[data-theme="neon"] body {
       background-image: url('/vibeword_bg1.png');
@@ -562,6 +571,24 @@
 
     // ── UI assembly ───────────────────────────────────────────────────────
 
+    // Measure the fixed top region (logo → bottom of the tab bar) and store how
+    // much of it should sit above the viewport's centre line (see CSS
+    // --above-centre): the whole region when tabbed (so the tab bar — the seam to
+    // the variable content — lands on the centre line, content below it), or half
+    // the card when there are no tabs (the card is simply centred). Only this
+    // constant top region is ever measured — never the per-tab content — so
+    // switching tabs or a growing list never moves anything above the seam. The
+    // span is independent of the padding it feeds, so the result is stable.
+    function positionTopBlock() {
+      const top = document.querySelector('.col')?.getBoundingClientRect().top ?? 0;
+      const tabBar = document.getElementById('tab-bar');
+      const tabbed = !!(tabBar && tabBar.offsetHeight > 0);
+      const anchor = tabbed ? tabBar : document.querySelector('.card');
+      if (!anchor) return;
+      const span = anchor.getBoundingClientRect().bottom - top;
+      document.documentElement.style.setProperty('--above-centre', (tabbed ? span : span / 2) + 'px');
+    }
+
     function buildUI(appCfg) {
       const content  = document.getElementById('tab-content');
       const hasLocal = !!sources['local'];
@@ -609,6 +636,11 @@
       }
 
       renderTabBar(tabs);
+
+      // Place the fixed top region above centre; content hangs below it (see CSS).
+      // Re-measured on resize because the region's height changes if it rewraps.
+      positionTopBlock();
+      window.addEventListener('resize', positionTopBlock);
 
       // Activate saved or first tab
       const savedTab = localStorage.getItem(TAB_KEY);
