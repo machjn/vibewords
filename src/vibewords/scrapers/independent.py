@@ -250,8 +250,24 @@ class IndependentScraper(Scraper):
     """
 
     @property
+    def connector_id(self) -> str:
+        return "independent_cryptic"
+
+    @property
+    def source(self) -> str:
+        return "independent"
+
+    @property
+    def source_name(self) -> str:
+        return "Independent"
+
+    @property
     def name(self) -> str:
-        return "Independent Cryptic"
+        return "Cryptic"
+
+    @property
+    def schedule(self) -> str | None:
+        return "Daily"
 
     def fetch_for_date(self, puzzle_date: date) -> dict[str, Any]:
         """Fetch a crossword for a specific date from the archive."""

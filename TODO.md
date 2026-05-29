@@ -47,6 +47,11 @@ Minor:
 - bug: pressing and holding on a cell often inputs on the previous cell
 - bug: weird asymmetrical behaviour with two identical tabs open. one sees 2 players, the other 1
 - cross out clues that are completed
+- custom name for a room
+- connector tabs on landing page? /
+- add auto-generated crossword connector?
+- add home-cooked connector? /
+- add puzzle type?
 
 Major:
 - Add other scrapers
@@ -143,3 +148,12 @@ Alright. I want to add some application configuration. Primarily this should be 
 Among the configuration options should be for example, the wait duration before the wheel appears. Add anything else you thing ought to be configurable, and plumb it up. This might mean moving some values serverside that were previously hardcoded in the javascript. I'll leave it up to your discretion, we can always make modifications later.
 
 This next thing I don't want you to do right away, but it will be the next thing I ask you to do, so keep it in mind. For each input method (we can call them connectors or whatever) of Guardian, Independent, Ipuz, I want to only enable them if they are among a list of enabled connectors in the config. So that they have to be explicitly enabled.
+
+
+## Plan feedback
+
+- Lets formalize the concept of connector. We can create a Connector base class, and we already have a Scraper base class if I'm not mistaken. The scraping connectors e.g. GuardianConnector and IndependentConnector can implement both the Scraper and Connector classes. Whereas the LocalConnector just the Connector class. Not sure if python has abstract classes but we could use those for the base classes if they exist.
+- the local connector should not fail silently if an ipuz is corrupted or unreadable. We should be logging these things
+- I suppose as your plan makes clear, we need to differentiate between the connectors and the creation methods, as multiple creation methods can use the same connector (calendar creation method and by URL both use the Guardian connector, for example).
+- Re. locating the content, lets copy it into the dockerfile for now
+- 

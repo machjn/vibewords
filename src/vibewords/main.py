@@ -8,6 +8,7 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 from datetime import date
+from pathlib import Path
 from typing import Dict, Optional
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -19,40 +20,36 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from vibewords.config import load_config
+from vibewords.connectors import Connector
 from vibewords.ipuz_parser import Puzzle, parse_ipuz
+from vibewords.scrapers import Scraper
 from vibewords.scrapers.guardian import GuardianScraper
 from vibewords.scrapers.guardian import ScraperError as _GuardianScraperError
 from vibewords.scrapers.independent import IndependentScraper
 from vibewords.scrapers.independent import ScraperError as _IndependentScraperError
+from vibewords.scrapers.local import LocalConnector
 
 ScraperError = (_GuardianScraperError, _IndependentScraperError)
 
 cfg = load_config()
 
-_ALL_SCRAPERS = {
-    "guardian_cryptic": {
-        "instance": GuardianScraper("cryptic", weekly_rate=6),
-        "source": "guardian", "source_name": "Guardian",
-        "name": "Cryptic", "supports_url": True, "schedule": "Mon–Sat",
-    },
-    "guardian_quiptic": {
-        "instance": GuardianScraper("quiptic", weekly_rate=1),
-        "source": "guardian", "source_name": "Guardian",
-        "name": "Quiptic", "supports_url": True, "schedule": "Sundays",
-    },
-    "guardian_quick": {
-        "instance": GuardianScraper("quick", weekly_rate=6),
-        "source": "guardian", "source_name": "Guardian",
-        "name": "Quick", "supports_url": True, "schedule": "Mon–Sat",
-    },
-    "independent_cryptic": {
-        "instance": IndependentScraper(),
-        "source": "independent", "source_name": "Independent",
-        "name": "Cryptic", "supports_url": False, "schedule": "Daily",
-    },
+
+
+_ALL_CONNECTORS_LIST: list[Connector] = [
+    GuardianScraper("cryptic", weekly_rate=6, schedule="Mon–Sat"),
+    GuardianScraper("quiptic", weekly_rate=1, schedule="Sundays"),
+    GuardianScraper("quick", weekly_rate=6, schedule="Mon–Sat"),
+    IndependentScraper(),
+]
+
+_CONNECTORS: dict[str, Connector] = {
+    c.connector_id: c for c in _ALL_CONNECTORS_LIST
+    if c.source in cfg.connectors.enabled
 }
 
-_SCRAPERS = {k: v for k, v in _ALL_SCRAPERS.items() if v["source"] in cfg.connectors.enabled}
+if "local" in cfg.connectors.enabled:
+    _local_connector = LocalConnector(Path(cfg.connectors.content_dir))
+    _CONNECTORS[_local_connector.connector_id] = _local_connector
 
 _log_level_name = cfg.server.log_level
 _log_level = getattr(logging, _log_level_name, logging.INFO)
@@ -374,7 +371,10 @@ def _make_room(puzzle: Puzzle, source: str = "upload") -> str:
 # ── Room creation: file upload ─────────────────────────────────────────────
 
 @app.post("/api/rooms")
-async def create_room(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def create_room(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+):
     if "ipuz" not in cfg.connectors.enabled:
         raise HTTPException(status_code=404, detail="IPUZ upload is not enabled")
     prune_rooms()
@@ -400,18 +400,20 @@ def get_config():
     }
 
 
-# ── Scrapers metadata ──────────────────────────────────────────────────────
+# ── Connectors metadata ────────────────────────────────────────────────────
 
 @app.get("/api/scrapers")
 def list_scrapers():
     return [
         {
-            "id": k,
-            "source": v["source"], "source_name": v["source_name"],
-            "name": v["name"], "supports_url": v["supports_url"],
-            "schedule": v["schedule"],
+            "id": c.connector_id,
+            "source": c.source,
+            "source_name": c.source_name,
+            "name": c.name,
+            "schedule": c.schedule,
+            "supports_url": getattr(c, "supports_url", False),
         }
-        for k, v in _SCRAPERS.items()
+        for c in _CONNECTORS.values()
     ]
 
 
@@ -423,10 +425,13 @@ class RoomFromDate(BaseModel):
 
 
 @app.post("/api/rooms/date")
-def create_room_from_date(body: RoomFromDate, background_tasks: BackgroundTasks):
+def create_room_from_date(
+    body: RoomFromDate,
+    background_tasks: BackgroundTasks,
+):
     prune_rooms()
-    entry = _SCRAPERS.get(body.scraper)
-    if entry is None:
+    entry = _CONNECTORS.get(body.scraper)
+    if entry is None or not isinstance(entry, Scraper):
         raise HTTPException(status_code=400, detail=f"Unknown scraper: {body.scraper!r}")
 
     try:
@@ -434,10 +439,9 @@ def create_room_from_date(body: RoomFromDate, background_tasks: BackgroundTasks)
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid date: {body.date!r}")
 
-    scraper = entry["instance"]
-    logger.info("Fetching %s crossword for %s", entry["name"], puzzle_date)
+    logger.info("Fetching %s %s crossword for %s", entry.source_name, entry.name, puzzle_date)
     try:
-        ipuz_data = scraper.fetch_for_date(puzzle_date)
+        ipuz_data = entry.fetch_for_date(puzzle_date)
     except ScraperError as e:
         logger.warning("Scrape failed (%s, %s): %s", body.scraper, puzzle_date, e)
         raise HTTPException(status_code=422, detail=str(e))
@@ -463,18 +467,20 @@ class RoomFromUrl(BaseModel):
 
 
 @app.post("/api/rooms/url")
-def create_room_from_url(body: RoomFromUrl, background_tasks: BackgroundTasks):
+def create_room_from_url(
+    body: RoomFromUrl,
+    background_tasks: BackgroundTasks,
+):
     prune_rooms()
-    entry = _SCRAPERS.get(body.scraper)
-    if entry is None:
+    entry = _CONNECTORS.get(body.scraper)
+    if entry is None or not isinstance(entry, Scraper):
         raise HTTPException(status_code=400, detail=f"Unknown scraper: {body.scraper!r}")
-    if not entry["supports_url"]:
-        raise HTTPException(status_code=400, detail=f"{entry['name']} does not support URL-based fetching")
+    if not entry.supports_url:
+        raise HTTPException(status_code=400, detail=f"{entry.name} does not support URL-based fetching")
 
-    scraper = entry["instance"]
-    logger.info("Fetching crossword from %s via %s", body.url, entry["name"])
+    logger.info("Fetching crossword from %s via %s %s", body.url, entry.source_name, entry.name)
     try:
-        ipuz_data = scraper.fetch_by_url(body.url)
+        ipuz_data = entry.fetch_by_url(body.url)
     except ScraperError as e:
         logger.warning("Scrape failed for %s: %s", body.url, e)
         raise HTTPException(status_code=422, detail=str(e))
@@ -488,6 +494,45 @@ def create_room_from_url(body: RoomFromUrl, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=400, detail=f"Could not parse fetched puzzle: {e}")
 
     room_id = _make_room(puzzle, source=body.scraper)
+    background_tasks.add_task(_fifteensquared_background, room_id)
+    return {"room_id": room_id}
+
+
+# ── Room creation: local connector ────────────────────────────────────────
+
+class RoomFromLocal(BaseModel):
+    path: str
+
+
+@app.get("/api/local-puzzles")
+def list_local_puzzles():
+    conn = _CONNECTORS.get("local")
+    if not isinstance(conn, LocalConnector):
+        raise HTTPException(status_code=404, detail="Local connector is not enabled")
+    return conn.list_puzzles()
+
+
+@app.post("/api/rooms/local")
+def create_room_from_local(
+    body: RoomFromLocal,
+    background_tasks: BackgroundTasks,
+):
+    conn = _CONNECTORS.get("local")
+    if not isinstance(conn, LocalConnector):
+        raise HTTPException(status_code=404, detail="Local connector is not enabled")
+    prune_rooms()
+    try:
+        ipuz_data = conn.fetch_by_path(body.path)
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Failed to load local puzzle %r: %s", body.path, e)
+        raise HTTPException(status_code=500, detail=f"Could not load puzzle: {e}")
+    try:
+        puzzle = parse_ipuz(ipuz_data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not parse puzzle: {e}")
+    room_id = _make_room(puzzle, source=f"local:{body.path}")
     background_tasks.add_task(_fifteensquared_background, room_id)
     return {"room_id": room_id}
 

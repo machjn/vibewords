@@ -71,10 +71,17 @@
 
     /* ── Card heading ── */
     .card-heading {
-      padding: 1rem 1.75rem 0.85rem;
+      padding: 1rem 1.75rem 0.5rem;
       font-weight: 700;
       font-size: 0.95rem;
       color: var(--text);
+      border-bottom: none;
+    }
+
+    .card-subheading {
+      padding: 0 1.75rem 0.85rem;
+      font-size: 0.8rem;
+      color: var(--text-3);
       border-bottom: 2px solid var(--border);
     }
 
@@ -189,6 +196,63 @@
     /* URL section dims when no URL-capable scraper is selected */
     .section.dimmed { opacity: 0.4; pointer-events: none; }
 
+    /* ── Tab bar ── */
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-bar:empty { display: none; }
+
+    .tab-btn {
+      padding: 0.65rem 1rem;
+      background: none;
+      border: none;
+      font: 600 0.82rem/1 inherit;
+      color: var(--text-3);
+      cursor: pointer;
+      white-space: nowrap;
+      /* inset box-shadow avoids being clipped by card's overflow:hidden */
+      box-shadow: inset 0 -2px 0 transparent;
+      transition: color 0.15s, box-shadow 0.15s;
+    }
+
+    .tab-btn:hover  { color: var(--text); }
+    .tab-btn.active { color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+
+    /* ── Local puzzle list ── */
+    .local-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .local-puzzle-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 0.45rem 0.65rem;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+      color: var(--text);
+      width: 100%;
+      transition: background 0.12s, border-color 0.12s;
+    }
+
+    .local-puzzle-item:hover {
+      background: var(--accent-subtle);
+      border-color: var(--accent);
+    }
+
+    .local-puzzle-title { font-size: 0.88rem; font-weight: 600; }
+    .local-puzzle-meta  { font-size: 0.75rem; color: var(--text-3); margin-top: 0.1rem; }
+
     @media (max-width: 360px) {
       .input-row { flex-wrap: wrap; }
       .input-row .btn { width: 100%; }
@@ -212,50 +276,10 @@
   <a href="/rooms" class="rooms-btn">View active rooms</a>
 
   <div class="card" id="create-card">
-    <div class="card-heading">Create a room</div>
-
-    <!-- ── By date ── -->
-    <div class="section" id="date-section">
-      <div class="section-label">
-        <span>Scrape crossword by date</span>
-      </div>
-      <div class="input-row" style="margin-bottom:0.5rem">
-        <select id="source-select" style="flex:1"></select>
-        <select id="type-select" style="flex:1"></select>
-      </div>
-      <p id="schedule-hint" class="section-hint" style="margin-bottom:0.4rem;min-height:1em"></p>
-      <div class="input-row">
-        <input class="text-input input-date" type="date" id="date-input">
-        <button class="btn" id="date-btn">Go</button>
-      </div>
-      <p class="status" id="date-status"></p>
-    </div>
-
-    <!-- ── By URL ── -->
-    <div class="section" id="url-section">
-      <div class="section-label">
-        <span>Scrape crossword from URL</span>
-        <span class="section-hint" id="url-hint"></span>
-      </div>
-      <div class="input-row">
-        <input class="text-input input-url" type="text" id="url-input"
-               placeholder="https://www.theguardian.com/crosswords/… or 30013">
-        <button class="btn" id="url-btn">Go</button>
-      </div>
-      <p class="status" id="url-status"></p>
-    </div>
-
-    <!-- ── File upload ── -->
-    <div class="section" id="ipuz-section">
-      <div class="section-label"><span>Upload .ipuz</span></div>
-      <div class="upload-zone" id="drop-zone">
-        <div class="upload-icon">&#9635;</div>
-        <p><strong>Drop an .ipuz file here</strong><br>or click to choose one</p>
-        <input type="file" id="file-input" accept=".ipuz,application/json">
-      </div>
-      <p class="status" id="file-status"></p>
-    </div>
-
+    <div class="card-heading" id="card-heading">Create a room</div>
+    <p class="card-subheading">To create a room, select a crossword source</p>
+    <div class="tab-bar" id="tab-bar"></div>
+    <div id="tab-content"></div>
   </div>
 
   <div id="no-connectors-msg" style="display:none; width:100%; max-width:420px; background:var(--surface); border-radius:12px; box-shadow:0 2px 8px var(--shadow); padding:2rem 1.75rem; text-align:center; color:var(--text-3);">
@@ -275,7 +299,21 @@
   </div>
 
   <script>
-    // ── Scraper metadata ──────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    function setStatus(el, type, msg) {
+      if (!el) return;
+      el.className = `status ${type}`;
+      el.textContent = msg;
+    }
+
+    function escHtml(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ── Connector metadata ────────────────────────────────────────────────
 
     let scrapers = [];
     let sources  = {};  // { source_id: { name, types: [scraper, …] } }
@@ -289,162 +327,293 @@
         if (!sources[s.source]) sources[s.source] = { name: s.source_name, types: [] };
         sources[s.source].types.push(s);
       }
+    }
 
-      const sourceSel = document.getElementById('source-select');
-      sourceSel.innerHTML = Object.entries(sources).map(([id, src]) =>
-        `<option value="${id}">${src.name}</option>`
+    // ── Tab management ────────────────────────────────────────────────────
+
+    const TAB_KEY = 'vibewords_active_tab';
+
+    function activateTab(id) {
+      document.querySelectorAll('.tab-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.tab === id));
+      document.querySelectorAll('.tab-panel').forEach(p =>
+        p.style.display = p.dataset.tab === id ? '' : 'none');
+      localStorage.setItem(TAB_KEY, id);
+      if (id === 'local') loadLocalPuzzles();
+    }
+
+    function renderTabBar(tabs) {
+      const bar = document.getElementById('tab-bar');
+      if (tabs.length <= 1) return; // tab bar stays empty (hidden via :empty rule)
+      bar.innerHTML = tabs.map(t =>
+        `<button class="tab-btn" data-tab="${escHtml(t.id)}">${escHtml(t.label)}</button>`
+      ).join('');
+      bar.querySelectorAll('.tab-btn').forEach(btn =>
+        btn.addEventListener('click', () => activateTab(btn.dataset.tab))
+      );
+    }
+
+    // ── Scrape panel (combined source + type dropdowns) ───────────────────
+
+    function buildScrapePanelHTML(scraperSources) {
+      const today = new Date().toISOString().split('T')[0];
+      const sourceOptions = Object.entries(scraperSources).map(([id, src]) =>
+        `<option value="${escHtml(id)}">${escHtml(src.name)}</option>`
       ).join('');
 
+      return `<div class="tab-panel" data-tab="scrape">
+        <div class="section">
+          <div class="section-label"><span>By date</span></div>
+          <div class="input-row" style="margin-bottom:0.5rem">
+            <select id="source-select" style="flex:1">${sourceOptions}</select>
+            <select id="type-select" style="flex:1"></select>
+          </div>
+          <p id="scrape-schedule-hint" class="section-hint"
+             style="margin-bottom:0.4rem;min-height:1em"></p>
+          <div class="input-row">
+            <input class="text-input input-date" type="date"
+                   id="scrape-date-input" value="${today}" max="${today}">
+            <button class="btn" id="scrape-date-btn">Go</button>
+          </div>
+          <p class="status" id="scrape-date-status"></p>
+        </div>
+        <div class="section" id="scrape-url-section">
+          <div class="section-label"><span>From URL</span></div>
+          <div class="input-row">
+            <input class="text-input input-url" type="text"
+                   id="scrape-url-input" placeholder="">
+            <button class="btn" id="scrape-url-btn">Go</button>
+          </div>
+          <p class="status" id="scrape-url-status"></p>
+        </div>
+      </div>`;
+    }
+
+    function setupScrapePanel(scraperSources) {
+      const sourceSel   = document.getElementById('source-select');
+      const typeSel     = document.getElementById('type-select');
+      const hint        = document.getElementById('scrape-schedule-hint');
+      const dateInput   = document.getElementById('scrape-date-input');
+      const dateBtn     = document.getElementById('scrape-date-btn');
+      const dateStatus  = document.getElementById('scrape-date-status');
+      const urlSection  = document.getElementById('scrape-url-section');
+      const urlInput    = document.getElementById('scrape-url-input');
+      const urlBtn      = document.getElementById('scrape-url-btn');
+      const urlStatus   = document.getElementById('scrape-url-status');
+
+      function currentSource() { return scraperSources[sourceSel.value]; }
+      function selectedScraper() { return scrapers.find(s => s.id === typeSel.value) || null; }
+
+      function updateTypeDropdown() {
+        const src = currentSource();
+        typeSel.innerHTML = (src?.types || []).map(s =>
+          `<option value="${escHtml(s.id)}">${escHtml(s.name)}</option>`
+        ).join('');
+        updateHintAndUrl();
+      }
+
+      function updateHintAndUrl() {
+        const s = selectedScraper();
+        hint.textContent = s?.schedule ? `Publishes ${s.schedule}` : '';
+        const hasUrl = currentSource()?.types.some(t => t.supports_url) ?? false;
+        urlSection.style.display = hasUrl ? '' : 'none';
+        if (hasUrl) {
+          urlInput.placeholder = sourceSel.value === 'guardian'
+            ? 'https://www.theguardian.com/crosswords/… or 30013'
+            : 'Puzzle URL…';
+        }
+      }
+
+      sourceSel.addEventListener('change', updateTypeDropdown);
+      typeSel.addEventListener('change', updateHintAndUrl);
       updateTypeDropdown();
-    }
 
-    function updateTypeDropdown() {
-      const sourceId = document.getElementById('source-select').value;
-      const typeSel  = document.getElementById('type-select');
-      typeSel.innerHTML = (sources[sourceId]?.types || []).map(s =>
-        `<option value="${s.id}">${s.name}</option>`
-      ).join('');
-      updateScheduleHint();
-      updateUrlSection();
-    }
-
-    function updateScheduleHint() {
-      const scraper = selectedDateScraper();
-      document.getElementById('schedule-hint').textContent =
-        scraper?.schedule ? `Publishes ${scraper.schedule}` : '';
-    }
-
-    function selectedDateScraper() {
-      const id = document.getElementById('type-select').value;
-      return scrapers.find(s => s.id === id) || null;
-    }
-
-    function updateUrlSection() {
-      const urlCapable = scrapers.filter(s => s.supports_url);
-      const section = document.getElementById('url-section');
-      const hint    = document.getElementById('url-hint');
-
-      if (urlCapable.length === 0) {
-        section.style.display = 'none';
-        return;
+      async function doDate() {
+        const scraperEntry = selectedScraper();
+        const d = dateInput.value;
+        if (!scraperEntry || !d) return;
+        setStatus(dateStatus, 'loading', 'Fetching crossword…');
+        dateBtn.disabled = true;
+        try {
+          const res = await fetch('/api/rooms/date', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scraper: scraperEntry.id, date: d }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || 'Failed to create room');
+          location.href = `/room/${data.room_id}`;
+        } catch (err) {
+          setStatus(dateStatus, 'error', err.message);
+          dateBtn.disabled = false;
+        }
       }
+      dateBtn.addEventListener('click', doDate);
+      dateInput.addEventListener('keydown', e => { if (e.key === 'Enter') doDate(); });
 
-      section.style.display = '';
-      section.classList.remove('dimmed');
-      const sourceNames = [...new Set(urlCapable.map(s => s.source_name))];
-      hint.textContent = '(' + sourceNames.join(', ') + ')';
+      async function doUrl() {
+        const url = urlInput.value.trim();
+        if (!url) return;
+        const urlScraper = currentSource()?.types.find(s => s.supports_url);
+        if (!urlScraper) return;
+        setStatus(urlStatus, 'loading', 'Fetching crossword…');
+        urlBtn.disabled = true;
+        try {
+          const res = await fetch('/api/rooms/url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scraper: urlScraper.id, url }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || 'Failed to create room');
+          location.href = `/room/${data.room_id}`;
+        } catch (err) {
+          setStatus(urlStatus, 'error', err.message);
+          urlBtn.disabled = false;
+        }
+      }
+      urlBtn.addEventListener('click', doUrl);
+      urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') doUrl(); });
     }
 
-    document.getElementById('source-select').addEventListener('change', updateTypeDropdown);
-    document.getElementById('type-select').addEventListener('change', updateScheduleHint);
+    // ── Local panel ───────────────────────────────────────────────────────
 
-    // ── By date ───────────────────────────────────────────────────────────
+    let localPuzzlesLoaded = false;
 
-    const dateInput  = document.getElementById('date-input');
-    const dateBtn    = document.getElementById('date-btn');
-    const dateStatus = document.getElementById('date-status');
-
-    // Default to today; cap max at today since future puzzles aren't published yet
-    const today = new Date().toISOString().split('T')[0];
-    dateInput.value = today;
-    dateInput.max   = today;
-
-    async function createFromDate() {
-      const scraper = document.getElementById('type-select').value;
-      const d = dateInput.value;
-      if (!scraper || !d) return;
-
-      setStatus(dateStatus, 'loading', 'Fetching crossword…');
-      dateBtn.disabled = true;
-
+    async function loadLocalPuzzles() {
+      if (localPuzzlesLoaded) return;
+      const list   = document.getElementById('local-list');
+      const status = document.getElementById('local-status');
+      setStatus(status, 'loading', 'Loading puzzles…');
       try {
-        const res = await fetch('/api/rooms/date', {
+        const res     = await fetch('/api/local-puzzles');
+        const puzzles = await res.json();
+        localPuzzlesLoaded = true;
+        setStatus(status, '', '');
+        if (puzzles.length === 0) {
+          setStatus(status, '', 'No puzzles found in the local library.');
+          return;
+        }
+        list.innerHTML = puzzles.map(p => {
+          const meta = [p.date, p.publisher].filter(Boolean).join(' · ');
+          return `<button class="local-puzzle-item" data-path="${escHtml(p.id)}">
+            <span class="local-puzzle-title">${escHtml(p.title || p.id)}</span>
+            ${meta ? `<span class="local-puzzle-meta">${escHtml(meta)}</span>` : ''}
+          </button>`;
+        }).join('');
+        list.querySelectorAll('.local-puzzle-item').forEach(btn =>
+          btn.addEventListener('click', () => createFromLocal(btn.dataset.path))
+        );
+      } catch (err) {
+        setStatus(status, 'error', 'Could not load local puzzles.');
+      }
+    }
+
+    async function createFromLocal(path) {
+      const status  = document.getElementById('local-status');
+      setStatus(status, 'loading', 'Creating room…');
+      try {
+        const res = await fetch('/api/rooms/local', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scraper, date: d }),
+          body: JSON.stringify({ path }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Failed to create room');
         location.href = `/room/${data.room_id}`;
       } catch (err) {
-        setStatus(dateStatus, 'error', err.message);
-        dateBtn.disabled = false;
+        setStatus(status, 'error', err.message);
       }
     }
 
-    dateBtn.addEventListener('click', createFromDate);
-    dateInput.addEventListener('keydown', e => { if (e.key === 'Enter') createFromDate(); });
+    // ── Upload panel ──────────────────────────────────────────────────────
 
-    // ── By URL ────────────────────────────────────────────────────────────
+    function setupUploadZone() {
+      const zone       = document.getElementById('drop-zone');
+      const fileInput  = document.getElementById('file-input');
+      const fileStatus = document.getElementById('file-status');
 
-    const urlInput  = document.getElementById('url-input');
-    const urlBtn    = document.getElementById('url-btn');
-    const urlStatus = document.getElementById('url-status');
+      zone.addEventListener('click', () => fileInput.click());
+      zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        if (e.dataTransfer.files[0]) doUpload(e.dataTransfer.files[0]);
+      });
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files[0]) doUpload(fileInput.files[0]);
+      });
 
-    async function createFromUrl() {
-      const url = urlInput.value.trim();
-      if (!url) return;
-
-      // Find the first URL-capable scraper
-      const scraper = scrapers.find(s => s.supports_url);
-      if (!scraper) return;
-
-      setStatus(urlStatus, 'loading', 'Fetching crossword…');
-      urlBtn.disabled = true;
-
-      try {
-        const res = await fetch('/api/rooms/url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scraper: scraper.id, url }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Failed to create room');
-        location.href = `/room/${data.room_id}`;
-      } catch (err) {
-        setStatus(urlStatus, 'error', err.message);
-        urlBtn.disabled = false;
+      async function doUpload(file) {
+        setStatus(fileStatus, 'loading', 'Creating room…');
+        const form = new FormData();
+        form.append('file', file);
+        try {
+          const res = await fetch('/api/rooms', { method: 'POST', body: form });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || 'Upload failed');
+          location.href = `/room/${data.room_id}`;
+        } catch (err) {
+          setStatus(fileStatus, 'error', err.message);
+        }
       }
     }
 
-    urlBtn.addEventListener('click', createFromUrl);
-    urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') createFromUrl(); });
+    // ── UI assembly ───────────────────────────────────────────────────────
 
-    // ── File upload ───────────────────────────────────────────────────────
+    function buildUI(appCfg) {
+      const content  = document.getElementById('tab-content');
+      const hasLocal = !!sources['local'];
+      const tabs     = [];
 
-    const zone       = document.getElementById('drop-zone');
-    const fileInput  = document.getElementById('file-input');
-    const fileStatus = document.getElementById('file-status');
-
-    zone.addEventListener('click', () => fileInput.click());
-    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
-    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-    zone.addEventListener('drop', e => {
-      e.preventDefault();
-      zone.classList.remove('drag-over');
-      if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]);
-    });
-    fileInput.addEventListener('change', () => { if (fileInput.files[0]) upload(fileInput.files[0]); });
-
-    async function upload(file) {
-      setStatus(fileStatus, 'loading', 'Creating room…');
-      const form = new FormData();
-      form.append('file', file);
-      try {
-        const res = await fetch('/api/rooms', { method: 'POST', body: form });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Upload failed');
-        location.href = `/room/${data.room_id}`;
-      } catch (err) {
-        setStatus(fileStatus, 'error', err.message);
+      // Inject upload panel
+      if (appCfg.ipuz_enabled) {
+        content.insertAdjacentHTML('beforeend', `
+          <div class="tab-panel" data-tab="upload">
+            <div class="section">
+              <div class="section-label"><span>Upload .ipuz</span></div>
+              <div class="upload-zone" id="drop-zone">
+                <div class="upload-icon">&#9635;</div>
+                <p><strong>Drop an .ipuz file here</strong><br>or click to choose one</p>
+                <input type="file" id="file-input" accept=".ipuz,application/json">
+              </div>
+              <p class="status" id="file-status"></p>
+            </div>
+          </div>`);
+        setupUploadZone();
+        tabs.push({ id: 'upload', label: 'Upload' });
       }
-    }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+      // Inject local panel
+      if (hasLocal) {
+        content.insertAdjacentHTML('beforeend', `
+          <div class="tab-panel" data-tab="local">
+            <div class="section">
+              <div class="section-label"><span>Local library</span></div>
+              <div id="local-list" class="local-list"></div>
+              <p class="status" id="local-status"></p>
+            </div>
+          </div>`);
+        tabs.push({ id: 'local', label: 'Local' });
+      }
 
-    function setStatus(el, type, msg) {
-      el.className = `status ${type}`;
-      el.textContent = msg;
+      // Inject combined scrape panel for all non-local sources
+      const scraperSources = Object.fromEntries(
+        Object.entries(sources).filter(([id]) => id !== 'local')
+      );
+      if (Object.keys(scraperSources).length > 0) {
+        content.insertAdjacentHTML('beforeend', buildScrapePanelHTML(scraperSources));
+        setupScrapePanel(scraperSources);
+        tabs.push({ id: 'scrape', label: 'Scrape' });
+      }
+
+      renderTabBar(tabs);
+
+      // Activate saved or first tab
+      const savedTab = localStorage.getItem(TAB_KEY);
+      const initial  = (savedTab && tabs.find(t => t.id === savedTab)) ? savedTab : tabs[0]?.id;
+      if (initial) activateTab(initial);
     }
 
     // ── Boot ──────────────────────────────────────────────────────────────
@@ -455,19 +624,16 @@
         fetch('/api/config').then(r => r.json()).catch(() => ({})),
       ]);
 
-      if (!appCfg.ipuz_enabled) {
-        document.getElementById('ipuz-section').style.display = 'none';
-      }
+      const hasScrapers = scrapers.some(s => s.source !== 'local');
+      const hasLocal    = scrapers.some(s => s.source === 'local');
 
-      if (scrapers.length === 0) {
-        document.getElementById('date-section').style.display = 'none';
-        document.getElementById('url-section').style.display = 'none';
-      }
-
-      if (scrapers.length === 0 && !appCfg.ipuz_enabled) {
+      if (!hasScrapers && !hasLocal && !appCfg.ipuz_enabled) {
         document.getElementById('create-card').style.display = 'none';
         document.getElementById('no-connectors-msg').style.display = '';
+        return;
       }
+
+      buildUI(appCfg);
     }
 
     init();
@@ -475,10 +641,8 @@
     // Reset loading state if browser restores page from bfcache (back button).
     window.addEventListener('pageshow', e => {
       if (!e.persisted) return;
-      dateBtn.disabled = false;
-      urlBtn.disabled  = false;
-      setStatus(dateStatus, '', '');
-      setStatus(urlStatus,  '', '');
+      document.querySelectorAll('.btn').forEach(btn => btn.disabled = false);
+      document.querySelectorAll('.status').forEach(el => setStatus(el, '', ''));
     });
   </script>
 </body>

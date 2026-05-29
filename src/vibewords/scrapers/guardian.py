@@ -382,13 +382,34 @@ class GuardianScraper(Scraper):
     Also exposes `fetch_by_url` and `fetch_by_number` for direct access.
     """
 
-    def __init__(self, crossword_type: str = "cryptic", weekly_rate: float = 6):
+    def __init__(self, crossword_type: str = "cryptic", weekly_rate: float = 6, schedule: str | None = None):
         self._crossword_type = crossword_type
         self._weekly_rate = weekly_rate
+        self._schedule = schedule
+
+    @property
+    def connector_id(self) -> str:
+        return f"guardian_{self._crossword_type}"
+
+    @property
+    def source(self) -> str:
+        return "guardian"
+
+    @property
+    def source_name(self) -> str:
+        return "Guardian"
 
     @property
     def name(self) -> str:
-        return f"Guardian {self._crossword_type.title()}"
+        return self._crossword_type.title()
+
+    @property
+    def schedule(self) -> str | None:
+        return self._schedule
+
+    @property
+    def supports_url(self) -> bool:
+        return True
 
     def fetch_today(self) -> dict[str, Any]:
         """Fetch the most recently published puzzle for this series.
