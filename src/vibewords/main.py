@@ -196,6 +196,7 @@ class Room:
         self.pencil_grid: Dict[str, str] = {}
         self.revealed: set = set()
         self.verified_clues: set = set()
+        self.revealed_clues: set = set()
         self.clue_fill: Dict[str, str] = {}  # primary clue key -> 'pencil' | 'firm' (absent = not filled)
         self.solutions_url: Optional[str] = None  # None=searching, ""=not found, url=found
         self._cell_to_clue: Dict[str, set] = {}
@@ -642,6 +643,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         "pencil_grid": room.pencil_grid,
         "revealed": list(room.revealed),
         "verified_clues": list(room.verified_clues),
+        "revealed_clues": list(room.revealed_clues),
         "clue_fill": room.clue_fill,
         "users": room.users_list(),
         "room_created_at": room.created_at,
@@ -744,6 +746,16 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 room.name = new_name or None
                 logger.info("[%s] %s renamed room: %r → %r", room_id, user_id, old_name, room.name)
                 await room.broadcast({"type": "room_renamed", "name": room.name or ""})
+
+            elif msg_type == "word_revealed":
+                key = str(data.get("key", ""))
+                if re.fullmatch(r'[ad]-\d+', key):
+                    room.revealed_clues.add(key)
+                    logger.debug("[%s] %s clue %s revealed", room_id, user_id, key)
+                    await room.broadcast(
+                        {"type": "clue_revealed", "key": key},
+                        exclude=websocket,
+                    )
 
             elif msg_type == "word_correct":
                 key = str(data.get("key", ""))

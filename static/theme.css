@@ -28,8 +28,8 @@
   --accent-2:      #2980b9; /* accent hover/pressed state */
   --accent-subtle: rgba(52,152,219,0.12); /* accent tint background — active picker option */
 
-  --correct:       #27ae60; /* correct-answer highlight */
-  --error:         #e74c3c; /* wrong-answer highlight */
+  --correct:       #1e8449; /* correct-answer highlight (darkened for legibility on white) */
+  --error:         #c0392b; /* wrong-answer highlight (darkened for legibility on white) */
   --warning:       #e67e22; /* warning state (e.g. connection issues) */
   --pencil:        #7f8c8d; /* pencil-mode letter colour */
 
@@ -59,8 +59,8 @@ html[data-theme="dark"] {
   --accent:        #3d9fd4;
   --accent-2:      #5dade2; /* accent-2 is lighter than accent in dark (reversed from light) for legibility */
   --accent-subtle: rgba(61,159,212,0.18);
-  --correct:       #2ecc71;
-  --error:         #e74c3c;
+  --correct:       #1e8449; /* darkened for legibility on the always-white grid */
+  --error:         #c0392b;
   --warning:       #e67e22;
   --pencil:        #95a5a6;
   --grid-line:     #434544; /* softened slightly so the grid border isn't jarring on a dark page */
@@ -86,8 +86,8 @@ html[data-theme="neon"] {
   --accent:        #3d9fd4; /* same blue as dark theme */
   --accent-2:      #5dade2;
   --accent-subtle: rgba(61,159,212,0.2);
-  --correct:       #00ff88;
-  --error:         #ff3355;
+  --correct:       #229c55; /* darkened for legibility on the always-white grid */
+  --error:         #c71602;
   --warning:       #ff8800;
   --pencil:        #cc4488;
   --grid-line:     #cc0066;

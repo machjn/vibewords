@@ -31,6 +31,7 @@ let sel = { row: -1, col: -1, dir: 'across' };
 let pencilMode = false;
 let showOthers = true;
 let verifiedClues = new Set(); // "a-5" / "d-12" — words confirmed correct (shared via server)
+let revealedClues = new Set(); // "a-5" / "d-12" — words directly revealed (shared via server)
 let crossoutEnabled = true;    // client-only: whether this player displays filled-clue crossouts (on by default)
 let clueFill = {};             // "a-5" -> 'pencil' | 'firm' — authoritative fill state from server
 
@@ -109,6 +110,7 @@ function handleMessage(msg) {
       pencilGrid  = msg.pencil_grid || {};
       revealedCells = new Set(msg.revealed || []);
       verifiedClues = new Set(msg.verified_clues || []);
+      revealedClues = new Set(msg.revealed_clues || []);
       clueFill = msg.clue_fill || {};
       msg.users.forEach(u => {
         if (u.user_id !== myUserId)
@@ -117,7 +119,8 @@ function handleMessage(msg) {
       renderPuzzle();
       renderClues();
       applyGrid();
-      verifiedClues.forEach(key => _renderVerifiedClue(key));
+      verifiedClues.forEach(key => _renderClueMark(key));
+      revealedClues.forEach(key => _renderClueMark(key));
       applyCrossout();
       msg.users.forEach(u => {
         if (u.user_id !== myUserId && u.cursor)
@@ -197,6 +200,11 @@ function handleMessage(msg) {
 
     case 'clue_verified':
       verifyClue(msg.key);
+      break;
+
+    case 'clue_revealed':
+      revealedClues.add(msg.key);
+      _renderClueMark(msg.key);
       break;
 
     case 'clue_fill':
@@ -336,27 +344,43 @@ function updateCellVerifiedDisplay(r, c) {
   inp.classList.toggle('word-correct', green);
 }
 
-// Apply/remove word-correct CSS for a clue key based on current verifiedClues.
-function _renderVerifiedClue(key) {
+// Apply/remove the clue-panel colour for a clue key: green when verified correct,
+// red when it contains a revealed cell. The two are mutually exclusive (a revealed
+// word is never verified), but green wins via CSS source order if they ever overlap.
+function _renderClueMark(key) {
   const { dir, num } = _parseClueKey(key);
   const pos = findClueStart(num);
   if (!pos) return;
+  const cells = wordCells(pos.row, pos.col, dir);
   const verified = verifiedClues.has(key);
+  const revealed = !verified && revealedClues.has(key);
   chainEntries(getChain(num, dir), dir).forEach(({ num: chainNum, dir: chainDir }) => {
     const clueEl = document.getElementById(`clue-${chainDir[0]}-${chainNum}`);
-    if (clueEl) clueEl.classList.toggle('word-correct', verified);
+    if (clueEl) {
+      clueEl.classList.toggle('word-correct', verified);
+      clueEl.classList.toggle('word-revealed', revealed);
+    }
   });
-  wordCells(pos.row, pos.col, dir).forEach(([r, c]) => updateCellVerifiedDisplay(r, c));
+  cells.forEach(([r, c]) => updateCellVerifiedDisplay(r, c));
+}
+
+// Re-render the clue mark for the word(s) passing through a cell (used on reveal
+// and any cell edit, since revealed state is per-cell).
+function _renderClueMarkAtCell(r, c) {
+  for (const dir of ['across', 'down']) {
+    const entry = wordStartEntry(r, c, dir);
+    if (entry) _renderClueMark(`${entry.dir[0]}-${entry.num}`);
+  }
 }
 
 function verifyClue(key) {
   verifiedClues.add(key);
-  _renderVerifiedClue(key);
+  _renderClueMark(key);
 }
 
 function unverifyClue(key) {
   verifiedClues.delete(key);
-  _renderVerifiedClue(key);
+  _renderClueMark(key);
 }
 
 // ── Filled-clue crossout (server-tracked state, client-side display toggle) ──
@@ -404,6 +428,7 @@ function updateCellDisplay(r, c) {
   inp.classList.toggle('pencil', !!pencilLetter);
   inp.classList.toggle('revealed', !pencilLetter && !!confirmedLetter && revealedCells.has(key));
   recheckWordCorrectness(r, c);
+  _renderClueMarkAtCell(r, c);
 }
 
 // ── Per-player selection overlays ──────────────────────────────────────────
@@ -849,7 +874,17 @@ function revealLetter() {
   if (!puzzle.solution || sel.row < 0) return;
   const { row, col } = sel;
   const letter = solutionAt(row, col);
-  if (letter && letter !== '#') commitCell(row, col, letter, { isPencil: false, isRevealed: true });
+  if (!letter || letter === '#') return;
+  commitCell(row, col, letter, { isPencil: false, isRevealed: true });
+  for (const dir of ['across', 'down']) {
+    const entry = wordStartEntry(row, col, dir);
+    if (entry) {
+      const key = `${entry.dir[0]}-${entry.num}`;
+      revealedClues.add(key);
+      _renderClueMark(key);
+      send({ type: 'word_revealed', key });
+    }
+  }
 }
 
 function revealWord() {
@@ -858,6 +893,13 @@ function revealWord() {
     const letter = solutionAt(r, c);
     if (letter && letter !== '#') commitCell(r, c, letter, { isPencil: false, isRevealed: true });
   });
+  const entry = wordStartEntry(sel.row, sel.col, sel.dir);
+  if (entry) {
+    const key = `${entry.dir[0]}-${entry.num}`;
+    revealedClues.add(key);
+    _renderClueMark(key);
+    send({ type: 'word_revealed', key });
+  }
 }
 
 // ── Check ──────────────────────────────────────────────────────────────────

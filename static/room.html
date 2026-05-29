@@ -302,7 +302,8 @@
     .cell input.revealed { color: var(--error); }
     /* word-correct after revealed so green wins when a revealed word is complete */
     .cell input.word-correct { color: var(--correct); }
-    .clue-item.word-correct { color: var(--correct); font-weight: 600; }
+    .clue-item.word-revealed { color: var(--error); }
+    .clue-item.word-correct { color: var(--correct); }
 
     /* Crossing-out filled clues (client-side display toggle) */
     .clue-item.filled { opacity: 0.5; }
