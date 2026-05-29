@@ -7,9 +7,6 @@ dist/
 build/
 .venv/
 
-# Puzzle files (downloaded/generated, not source)
-*.ipuz
-
 # IDE
 .vscode/
 .idea/

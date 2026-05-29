@@ -1,0 +1,726 @@
+{
+  "version": "http://ipuz.org/v2",
+  "kind": [
+    "http://ipuz.org/crossword#1"
+  ],
+  "copyright": "Guardian News & Media Limited",
+  "publisher": "The Guardian",
+  "title": "Cryptic crossword No 30,012",
+  "author": "Ramsay",
+  "date": "2026-05-21",
+  "origin": "https://www.theguardian.com/crosswords/cryptic/30012",
+  "block": "#",
+  "empty": "0",
+  "dimensions": {
+    "width": 15,
+    "height": 15
+  },
+  "puzzle": [
+    [
+      {
+        "cell": 1
+      },
+      0,
+      {
+        "cell": 2
+      },
+      0,
+      {
+        "cell": 3
+      },
+      0,
+      {
+        "cell": 4
+      },
+      0,
+      {
+        "cell": 5
+      },
+      0,
+      {
+        "cell": 6
+      },
+      0,
+      {
+        "cell": 7
+      },
+      0,
+      {
+        "cell": 8
+      }
+    ],
+    [
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 9
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      "#",
+      {
+        "cell": 10
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 11
+      },
+      0,
+      0,
+      "#",
+      {
+        "cell": 12
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      "#",
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      "#"
+    ],
+    [
+      {
+        "cell": 13
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      {
+        "cell": 14
+      },
+      0,
+      0,
+      0,
+      "#",
+      {
+        "cell": 15
+      },
+      0,
+      0,
+      {
+        "cell": 16
+      }
+    ],
+    [
+      0,
+      "#",
+      "#",
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      {
+        "cell": 17
+      },
+      "#",
+      "#",
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 18
+      },
+      0,
+      {
+        "cell": 19
+      },
+      0,
+      "#",
+      {
+        "cell": 20
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      {
+        "cell": 21
+      },
+      0,
+      0
+    ],
+    [
+      "#",
+      "#",
+      0,
+      "#",
+      {
+        "cell": 22
+      },
+      "#",
+      0,
+      "#",
+      "#",
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 23
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      {
+        "cell": 24
+      },
+      0,
+      0,
+      "#",
+      {
+        "cell": 25
+      },
+      0,
+      0
+    ],
+    [
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 26
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      "#",
+      {
+        "cell": 27
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 28
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  ],
+  "clues": {
+    "Across": [
+      [
+        1,
+        "Just as orgasm prompts poem by Yeats … (3,6,6)"
+      ],
+      [
+        9,
+        "… wrongly read note by misfortunate Keats (7)"
+      ],
+      [
+        10,
+        "For example, Keats and Yeats (or not) (7)"
+      ],
+      [
+        11,
+        "See 25"
+      ],
+      [
+        12,
+        "Heretics are punished for unfaithful acts (11)"
+      ],
+      [
+        13,
+        "You might slip on this bats blood (6,4)"
+      ],
+      [
+        15,
+        "Light’s non-binding energy (4)"
+      ],
+      [
+        18,
+        "E … e (4)"
+      ],
+      [
+        20,
+        "Bible teaching wrongly maligns Eve (10)"
+      ],
+      [
+        23,
+        "Gordon’s starter presented to massive foody? (11)"
+      ],
+      [
+        "25, 11",
+        "That man follows backwash of river froth (6)"
+      ],
+      [
+        26,
+        "Playing bingo, the French are mean (7)"
+      ],
+      [
+        27,
+        "Beast of burden returned to castle (7)"
+      ],
+      [
+        28,
+        "Fascist leader controlled Houston with rumba master general (9,6)"
+      ]
+    ],
+    "Down": [
+      [
+        1,
+        "Backup part of database liable to corruption (9)"
+      ],
+      [
+        2,
+        "Sea-sick seabird from China? (7)"
+      ],
+      [
+        3,
+        "Challenging former lover on stage (8)"
+      ],
+      [
+        4,
+        "Huge honour to sit on banks of Seine (5)"
+      ],
+      [
+        5,
+        "Re-entering language course (9)"
+      ],
+      [
+        6,
+        "Gone wild with axes splitting something needed for fire (6)"
+      ],
+      [
+        7,
+        "Provide detailed account of quite miserable passage (7)"
+      ],
+      [
+        8,
+        "Donates, as replacing 4, 6 and 15 (5)"
+      ],
+      [
+        14,
+        "International waters still surrounded by dumb-asses (5,4)"
+      ],
+      [
+        16,
+        "Dropping dead, wrote frantically (6,3)"
+      ],
+      [
+        17,
+        "Fresher report of any toilet more sullied (8)"
+      ],
+      [
+        19,
+        "Take end from communion wafer – on reflection, an exaltation! (7)"
+      ],
+      [
+        21,
+        "Slight temperature dropping off with cool hormone (7)"
+      ],
+      [
+        22,
+        "A right-beginning, dotted-letter-including alphabet (6)"
+      ],
+      [
+        23,
+        "Sadness as building terminally fire-damaged (5)"
+      ],
+      [
+        24,
+        "Like Top Gun pilot’s taxiing speed (approximately) (5)"
+      ]
+    ]
+  },
+  "solution": [
+    [
+      "T",
+      "H",
+      "E",
+      "S",
+      "E",
+      "C",
+      "O",
+      "N",
+      "D",
+      "C",
+      "O",
+      "M",
+      "I",
+      "N",
+      "G"
+    ],
+    [
+      "E",
+      "#",
+      "A",
+      "#",
+      "X",
+      "#",
+      "B",
+      "#",
+      "I",
+      "#",
+      "X",
+      "#",
+      "T",
+      "#",
+      "A"
+    ],
+    [
+      "M",
+      "I",
+      "S",
+      "T",
+      "A",
+      "K",
+      "E",
+      "#",
+      "R",
+      "H",
+      "Y",
+      "M",
+      "E",
+      "R",
+      "S"
+    ],
+    [
+      "P",
+      "#",
+      "T",
+      "#",
+      "C",
+      "#",
+      "S",
+      "#",
+      "E",
+      "#",
+      "G",
+      "#",
+      "M",
+      "#",
+      "E"
+    ],
+    [
+      "T",
+      "H",
+      "E",
+      "#",
+      "T",
+      "R",
+      "E",
+      "A",
+      "C",
+      "H",
+      "E",
+      "R",
+      "I",
+      "E",
+      "S"
+    ],
+    [
+      "A",
+      "#",
+      "R",
+      "#",
+      "I",
+      "#",
+      "#",
+      "#",
+      "T",
+      "#",
+      "N",
+      "#",
+      "S",
+      "#",
+      "#"
+    ],
+    [
+      "B",
+      "A",
+      "N",
+      "A",
+      "N",
+      "A",
+      "S",
+      "K",
+      "I",
+      "N",
+      "#",
+      "N",
+      "E",
+      "O",
+      "N"
+    ],
+    [
+      "L",
+      "#",
+      "#",
+      "#",
+      "G",
+      "#",
+      "E",
+      "#",
+      "O",
+      "#",
+      "N",
+      "#",
+      "#",
+      "#",
+      "U"
+    ],
+    [
+      "E",
+      "C",
+      "H",
+      "O",
+      "#",
+      "E",
+      "V",
+      "A",
+      "N",
+      "G",
+      "E",
+      "L",
+      "I",
+      "S",
+      "M"
+    ],
+    [
+      "#",
+      "#",
+      "O",
+      "#",
+      "A",
+      "#",
+      "E",
+      "#",
+      "#",
+      "#",
+      "W",
+      "#",
+      "N",
+      "#",
+      "B"
+    ],
+    [
+      "G",
+      "A",
+      "S",
+      "T",
+      "R",
+      "O",
+      "N",
+      "O",
+      "M",
+      "I",
+      "C",
+      "#",
+      "S",
+      "E",
+      "E"
+    ],
+    [
+      "R",
+      "#",
+      "A",
+      "#",
+      "A",
+      "#",
+      "S",
+      "#",
+      "A",
+      "#",
+      "O",
+      "#",
+      "U",
+      "#",
+      "R"
+    ],
+    [
+      "I",
+      "G",
+      "N",
+      "O",
+      "B",
+      "L",
+      "E",
+      "#",
+      "C",
+      "A",
+      "M",
+      "E",
+      "L",
+      "O",
+      "T"
+    ],
+    [
+      "E",
+      "#",
+      "N",
+      "#",
+      "I",
+      "#",
+      "A",
+      "#",
+      "H",
+      "#",
+      "E",
+      "#",
+      "I",
+      "#",
+      "W"
+    ],
+    [
+      "F",
+      "R",
+      "A",
+      "N",
+      "C",
+      "I",
+      "S",
+      "C",
+      "O",
+      "F",
+      "R",
+      "A",
+      "N",
+      "C",
+      "O"
+    ]
+  ],
+  "links": {
+    "Across": {
+      "25": [
+        25,
+        11
+      ],
+      "11": [
+        25,
+        11
+      ]
+    }
+  }
+}
