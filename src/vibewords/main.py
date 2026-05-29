@@ -757,6 +757,16 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                         exclude=websocket,
                     )
 
+            elif msg_type == "word_unrevealed":
+                key = str(data.get("key", ""))
+                if re.fullmatch(r'[ad]-\d+', key):
+                    room.revealed_clues.discard(key)
+                    logger.debug("[%s] %s clue %s unrevealed", room_id, user_id, key)
+                    await room.broadcast(
+                        {"type": "clue_unrevealed", "key": key},
+                        exclude=websocket,
+                    )
+
             elif msg_type == "word_correct":
                 key = str(data.get("key", ""))
                 if not re.fullmatch(r'[ad]-\d+', key):

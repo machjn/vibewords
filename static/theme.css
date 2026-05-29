@@ -87,7 +87,7 @@ html[data-theme="neon"] {
   --accent-2:      #5dade2;
   --accent-subtle: rgba(61,159,212,0.2);
   --correct:       #229c55; /* darkened for legibility on the always-white grid */
-  --error:         #c71602;
+  --error:         #a31000;
   --warning:       #ff8800;
   --pencil:        #cc4488;
   --grid-line:     #cc0066;

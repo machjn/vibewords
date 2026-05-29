@@ -53,6 +53,7 @@ Minor:
 - add home-cooked connector? /
 - add puzzle type? x
 - proper adherence to the ipuz API? Though it can be vague, we should at least set type correctly.
+- make single revealed and checked letters immutable too? probably for sake of consistancy
 
 Major:
 - Add other scrapers

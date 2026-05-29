@@ -207,6 +207,11 @@ function handleMessage(msg) {
       _renderClueMark(msg.key);
       break;
 
+    case 'clue_unrevealed':
+      revealedClues.delete(msg.key);
+      _renderClueMark(msg.key);
+      break;
+
     case 'clue_fill':
       Object.entries(msg.states).forEach(([key, st]) => {
         if (st === 'none') delete clueFill[key]; else clueFill[key] = st;
@@ -330,6 +335,15 @@ function _wordAllCorrect(cells) {
 
 function _wordHasRevealedCell(cells) {
   return cells.some(([r, c]) => revealedCells.has(`${r},${c}`));
+}
+
+function isCellImmutable(r, c) {
+  if (revealedCells.has(`${r},${c}`)) return true;
+  for (const dir of ['across', 'down']) {
+    const entry = wordStartEntry(r, c, dir);
+    if (entry && verifiedClues.has(`${entry.dir[0]}-${entry.num}`)) return true;
+  }
+  return false;
 }
 
 // Re-compute word-correct for one cell based on verifiedClues (used for crossing words).
@@ -699,13 +713,13 @@ function handleKeydown(e, r, c) {
     case 'Backspace':
       e.preventDefault(); handleBackspace(r, c); break;
     case 'Delete':
-      e.preventDefault(); commitCell(r, c, ''); break;
+      e.preventDefault(); if (!isCellImmutable(r, c)) commitCell(r, c, ''); break;
     case 'Tab':
       e.preventDefault(); e.shiftKey ? prevWord() : nextWord(); break;
     default:
       if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
         e.preventDefault();
-        commitCell(r, c, e.key.toUpperCase());
+        if (!isCellImmutable(r, c)) commitCell(r, c, e.key.toUpperCase());
         advance(r, c, sel.dir);
       }
   }
@@ -714,9 +728,10 @@ function handleKeydown(e, r, c) {
 function handleInput(e, r, c) {
   // Mobile fallback — keydown fired 'Unidentified'
   const val = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(-1);
-  e.target.value = val;
   const key = `${r},${c}`;
   const existing = pencilGrid[key] || grid[key] || '';
+  if (isCellImmutable(r, c)) { e.target.value = existing; advance(r, c, sel.dir); return; }
+  e.target.value = val;
   if (val === existing) return;
   commitCell(r, c, val);
   if (val) advance(r, c, sel.dir);
@@ -746,14 +761,13 @@ function commitCell(r, c, letter, { isPencil = pencilMode, isRevealed = false } 
 function handleBackspace(r, c) {
   const key = `${r},${c}`;
   if (grid[key] || pencilGrid[key]) {
-    commitCell(r, c, '');
+    if (!isCellImmutable(r, c)) commitCell(r, c, '');
   } else {
     const cells = wordCellsTagged(r, c, sel.dir);
     const idx = cells.findIndex(([wr, wc]) => wr === r && wc === c);
     if (idx > 0) {
       const [pr, pc, prevDir] = cells[idx - 1];
-      commitCell(pr, pc, '');
-      selectCell(pr, pc, prevDir);
+      if (!isCellImmutable(pr, pc)) { commitCell(pr, pc, ''); selectCell(pr, pc, prevDir); }
     }
   }
 }
@@ -962,8 +976,19 @@ function crossingWordIsComplete(r, c, dir) {
 }
 
 // Clears all cells in the current word that are NOT part of a complete crossing word.
+// Also removes any revealed/verified status for the clue, overriding immutability.
 function clearClue() {
   if (sel.row < 0) return;
+  const entry = wordStartEntry(sel.row, sel.col, sel.dir);
+  if (entry) {
+    const key = `${entry.dir[0]}-${entry.num}`;
+    if (revealedClues.has(key)) {
+      revealedClues.delete(key);
+      _renderClueMark(key);
+      send({ type: 'word_unrevealed', key });
+    }
+    if (verifiedClues.has(key)) unverifyClue(key);
+  }
   const crossDir = flip(sel.dir);
   wordCells(sel.row, sel.col, sel.dir).forEach(([r, c]) => {
     if (!crossingWordIsComplete(r, c, crossDir)) commitCell(r, c, '');
