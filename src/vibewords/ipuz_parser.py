@@ -29,6 +29,7 @@ class Puzzle:
     saved: Optional[list] = None    # list[list[str]] — previously entered letters
     title: str = ""
     author: str = ""
+    date: str = ""        # ISO format YYYY-MM-DD, if known
     links: dict = field(default_factory=dict)  # {direction: {clue_num: [chain]}}
     source_url: str = ""  # public URL of the original puzzle, if known
 
@@ -87,6 +88,7 @@ def parse_ipuz(data) -> Puzzle:
         saved=saved,
         title=raw.get("title", ""),
         author=raw.get("author", ""),
+        date=raw.get("date", ""),
         links=raw.get("links", {}),
         source_url=raw.get("origin", ""),
     )

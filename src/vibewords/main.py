@@ -254,6 +254,7 @@ class Room:
             "title": self.puzzle.title,
             "short_title": _make_short_title(self.puzzle.title or ''),
             "author": self.puzzle.author,
+            "date": self.puzzle.date,
             "source_url": self.puzzle.source_url,
             "width": self.puzzle.width,
             "height": self.puzzle.height,

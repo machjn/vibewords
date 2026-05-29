@@ -114,16 +114,37 @@
     }
     #room-chip.open .room-chip-panel { display: flex; }
 
-    .room-chip-id {
-      font-size: 0.75rem;
-      color: var(--text-3);
-      padding-bottom: 0.3rem;
+    .room-chip-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.1rem;
       border-bottom: 1px solid var(--border);
     }
-    .room-chip-id code {
+    .room-chip-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--text-3);
+    }
+    .room-chip-meta-row code {
       font-family: ui-monospace, monospace;
-      color: var(--text-2);
       letter-spacing: 0.03em;
+    }
+    .room-chip-meta-row .meta-val {
+      color: var(--text-2);
+      text-align: right;
+    }
+
+    .room-chip-links {
+      display: flex;
+      flex-direction: column;
+      padding-top: 0.35rem;
+      margin-top: 0.1rem;
+      border-top: 1px solid var(--border);
     }
 
     .room-chip-action {
@@ -276,8 +297,6 @@
     .action-btn.active { background: var(--warning); border-color: var(--warning); color: white; }
     #pencil-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
     #pencil-btn.active:hover { background: var(--accent-2); border-color: var(--accent-2); }
-    #export-btn { background: var(--accent); border-color: var(--accent); color: white; }
-    #export-btn:hover { background: var(--accent-2); border-color: var(--accent-2); }
 
     .btn-sep {
       width: 1px;
@@ -686,16 +705,27 @@
         <span class="room-chip-caret">&#9660;</span>
       </div>
       <div class="room-chip-panel">
-        <div class="room-chip-id">Room <code id="room-id-display"></code></div>
-        <div id="room-age" class="room-chip-link muted" style="cursor:default"></div>
+        <div class="room-chip-meta">
+          <div class="room-chip-meta-row">
+            <span>Room</span><code class="meta-val" id="room-id-display"></code>
+          </div>
+          <div class="room-chip-meta-row" id="puzzle-date-row" style="display:none">
+            <span>Published</span><span class="meta-val" id="puzzle-date"></span>
+          </div>
+          <div class="room-chip-meta-row">
+            <span>Uptime</span><span class="meta-val" id="room-age"></span>
+          </div>
+        </div>
         <button id="rename-room-btn" class="room-chip-action">&#9998; Rename room</button>
         <input id="rename-room-input" class="room-chip-action" type="text" maxlength="60"
                autocomplete="off" spellcheck="false" placeholder="Room name" style="display:none">
-        <button id="share-btn" class="room-chip-action">Copy Room Link</button>
+        <button id="share-btn" class="room-chip-action"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;vertical-align:-1px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copy Room Link</button>
         <button id="export-btn" class="room-chip-action">&#11015; Export .ipuz</button>
-        <a id="source-link" href="/rooms" class="room-chip-link" target="_blank" rel="noopener" style="display:none">Original puzzle</a>
-        <a id="solutions-link" class="room-chip-link muted" target="_blank" rel="noopener">Solutions (15²): searching…</a>
-        <a href="/rooms" class="room-chip-link">All rooms</a>
+        <div class="room-chip-links">
+          <a id="source-link" href="/rooms" class="room-chip-link" target="_blank" rel="noopener" style="display:none">Original puzzle</a>
+          <a id="solutions-link" class="room-chip-link muted" target="_blank" rel="noopener">Solutions (15²): searching…</a>
+          <a href="/rooms" class="room-chip-link">All rooms</a>
+        </div>
       </div>
     </div>
     <div id="players-bar"></div>

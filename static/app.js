@@ -10,9 +10,15 @@ let _roomAgeTimer  = null;
 function _formatRoomAge(ms) {
   const m = Math.floor(ms / 60000);
   const h = Math.floor(m / 60);
-  if (m < 1)  return 'started < 1m ago';
-  if (h < 1)  return `started ${m}m ago`;
-  return `started ${h}h ${m % 60}m ago`;
+  if (m < 1) return '< 1m';
+  if (h < 1) return `${m}m`;
+  return `${h}h ${m % 60}m`;
+}
+
+function _formatPuzzleDate(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d} ${months[m - 1]} ${y}`;
 }
 
 function _tickRoomAge() {
@@ -131,6 +137,12 @@ function handleMessage(msg) {
       const authorEl = document.getElementById('puzzle-author');
       authorEl.textContent = puzzle.author ? `By ${puzzle.author}` : '';
       authorEl.style.display = puzzle.author ? '' : 'none';
+      const dateRow = document.getElementById('puzzle-date-row');
+      const dateEl  = document.getElementById('puzzle-date');
+      if (puzzle.date && dateRow && dateEl) {
+        dateEl.textContent = _formatPuzzleDate(puzzle.date);
+        dateRow.style.display = '';
+      }
       const srcLink = document.getElementById('source-link');
       if (puzzle.source_url) {
         srcLink.href = puzzle.source_url;

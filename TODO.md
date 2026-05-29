@@ -38,7 +38,7 @@ Minor:
 - add publish date to room menu
 - bug: when entering text before an already filled cell, that cell gets highlighted. kinda of makes sense but not the behaviour we want.
 - right-click on name chip to randomize colour
-- bug: clipping when scrolling clue panel
+- bug: clipping when scrolling clue panel /
 - slightly increase author size?
 - in pencil mode, do we want to skip over cells that are already filled when moving on to next cell?
 - bug: the logo is clickable throught the entire left side of the top bar for some reason
@@ -51,9 +51,10 @@ Minor:
 - connector tabs on landing page? /
 - add auto-generated crossword connector?
 - add home-cooked connector? /
-- add puzzle type? x
+- add puzzle type? no, seems unecessary and restrictive  x
 - proper adherence to the ipuz API? Though it can be vague, we should at least set type correctly.
 - make single revealed and checked letters immutable too? probably for sake of consistancy
+- bug: visual bug that some gridlines appear thicker than others. this seems to happen on other crossword sites too
 
 Major:
 - Add other scrapers
