@@ -1131,8 +1131,9 @@ document.getElementById('share-btn').addEventListener('click', async () => {
   const btn = document.getElementById('share-btn');
   try {
     await navigator.clipboard.writeText(location.href);
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = 'Copy Room Link'; }, 2000);
+    const setLabel = t => { btn.lastChild.textContent = ' ' + t; };
+    setLabel('Copied!');
+    setTimeout(() => setLabel('Copy Room Link'), 2000);
   } catch { prompt('Share this link:', location.href); }
 });
 
