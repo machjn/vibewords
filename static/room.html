@@ -464,6 +464,7 @@
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--text-3);
+      text-align: center;
       padding: 0 0.75rem 0.4rem;
     }
 
@@ -474,13 +475,16 @@
         border-top: none;
         border-left: 1px solid var(--border);
       }
+      /* No top padding: the sticky header must sit flush at the scroll
+         container's top, or clues show through / overlap it when scrolled. */
+      .clue-sections-wrap .clue-section { padding-top: 0; }
       .clue-sections-wrap .clue-section h3 {
         position: sticky;
         top: 0;
         background: var(--surface);
         z-index: 1;
-        padding-top: 0.3rem;
-        padding-bottom: 0.3rem;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
         border-bottom: 1px solid var(--border);
       }
       .clue-sections-wrap .clue-item {
@@ -625,13 +629,14 @@
         border-top: none;
         border-left: 1px solid var(--border);
       }
+      .clue-sections-wrap .clue-section { padding-top: 0; }
       .clue-sections-wrap .clue-section h3 {
         position: sticky;
         top: 0;
         background: var(--surface);
         z-index: 1;
-        padding-top: 0.3rem;
-        padding-bottom: 0.3rem;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
         border-bottom: 1px solid var(--border);
       }
     }
