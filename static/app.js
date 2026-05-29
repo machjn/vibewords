@@ -145,17 +145,7 @@ function handleMessage(msg) {
     }
 
     case 'cell_update': {
-      const key = `${msg.row},${msg.col}`;
-      if (msg.value) {
-        if (msg.pencil) {
-          pencilGrid[key] = msg.value; delete grid[key]; revealedCells.delete(key);
-        } else {
-          grid[key] = msg.value; delete pencilGrid[key];
-          if (msg.revealed) revealedCells.add(key); else revealedCells.delete(key);
-        }
-      } else {
-        delete grid[key]; delete pencilGrid[key]; revealedCells.delete(key);
-      }
+      setCellState(`${msg.row},${msg.col}`, msg.value, msg.pencil, msg.revealed);
       updateCellDisplay(msg.row, msg.col);
       break;
     }
@@ -299,8 +289,6 @@ function fitGridToScreen() {
   gridEl.style.zoom = Math.abs(scale - 1) > 0.001 ? String(scale) : '';
 }
 
-// ── Cell display ───────────────────────────────────────────────────────────
-
 // ── Verified-clue helpers ──────────────────────────────────────────────────
 
 function _parseClueKey(key) {
@@ -313,7 +301,7 @@ function _wordAllCorrect(cells) {
   return cells.every(([r, c]) => {
     const letter = grid[`${r},${c}`];
     if (!letter) return false;
-    const sol = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
+    const sol = solutionAt(r, c);
     return !!sol && sol !== '#' && letter === sol;
   });
 }
@@ -370,6 +358,8 @@ function recheckWordCorrectness(r, c) {
     if (_wordHasRevealedCell(cells) || !_wordAllCorrect(cells)) unverifyClue(wordKey);
   }
 }
+
+// ── Cell display ───────────────────────────────────────────────────────────
 
 function updateCellDisplay(r, c) {
   const inp = getInput(r, c);
@@ -450,23 +440,20 @@ function updatePlayerList() {
     // Expanded dropdown listing all players
     const dropdown = document.createElement('div');
     dropdown.className = 'players-dropdown';
-    others.forEach(u => {
-      const chip = document.createElement('div');
-      chip.className = 'player-chip';
-      chip.innerHTML = `<span class="player-dot" style="background:${u.color}"></span><span class="player-name">${escHtml(u.name || '?')}</span>`;
-      dropdown.appendChild(chip);
-    });
+    others.forEach(u => dropdown.appendChild(makeOtherChip(u)));
     if (myUserId) dropdown.appendChild(makeMyChip());
     bar.appendChild(dropdown);
   } else {
-    others.forEach(u => {
-      const chip = document.createElement('div');
-      chip.className = 'player-chip';
-      chip.innerHTML = `<span class="player-dot" style="background:${u.color}"></span><span class="player-name">${escHtml(u.name || '?')}</span>`;
-      bar.appendChild(chip);
-    });
+    others.forEach(u => bar.appendChild(makeOtherChip(u)));
     if (myUserId) bar.appendChild(makeMyChip());
   }
+}
+
+function makeOtherChip(u) {
+  const chip = document.createElement('div');
+  chip.className = 'player-chip';
+  chip.innerHTML = `<span class="player-dot" style="background:${u.color}"></span><span class="player-name">${escHtml(u.name || '?')}</span>`;
+  return chip;
 }
 
 function makeMyChip() {
@@ -598,13 +585,21 @@ function getChain(num, dir) {
   return (puzzle.links[dirKey] || {})[num] || [num];
 }
 
+// Converts a links dir-key ('Across'/'Down') to internal 'across'/'down'.
+function _dirFromKey(key) { return key === 'Across' ? 'across' : 'down'; }
+
 // Normalises a chain into [{num, dir}] objects regardless of format.
 function chainEntries(chain, fallbackDir) {
   return chain.map(entry =>
     Array.isArray(entry)
-      ? { num: entry[0], dir: entry[1] === 'Across' ? 'across' : 'down' }
+      ? { num: entry[0], dir: _dirFromKey(entry[1]) }
       : { num: entry, dir: fallbackDir }
   );
+}
+
+// {num, dir} of the head (first run) of the chain containing clue `num` in `dir`.
+function chainHead(num, dir) {
+  return chainEntries([getChain(num, dir)[0]], dir)[0];
 }
 
 // Returns {num, dir} of the head of the chain containing (r,c) in direction dir,
@@ -614,17 +609,7 @@ function wordStartEntry(r, c, dir) {
   if (!run.length) return null;
   const startNum = puzzle.cells[run[0][0]][run[0][1]].number;
   if (!startNum) return null;
-  const chain = getChain(startNum, dir);
-  const first = chain[0];
-  return Array.isArray(first)
-    ? { num: first[0], dir: first[1] === 'Across' ? 'across' : 'down' }
-    : { num: first, dir };
-}
-
-// Returns the clue number of the first run in the chain (the display number).
-function wordStartNumber(r, c, dir) {
-  const entry = wordStartEntry(r, c, dir);
-  return entry ? entry.num : null;
+  return chainHead(startNum, dir);
 }
 
 // Returns {row, col} of the cell numbered `num`, or null.
@@ -679,18 +664,23 @@ function handleInput(e, r, c) {
   if (val) advance(r, c, sel.dir);
 }
 
-function commitCell(r, c, letter, { isPencil = pencilMode, isRevealed = false } = {}) {
-  const key = `${r},${c}`;
-  if (letter) {
+// Applies a cell's value to the local grid/pencil/revealed state. No DOM or
+// network — shared by local edits (commitCell) and remote updates (cell_update).
+function setCellState(key, value, isPencil, isRevealed) {
+  if (value) {
     if (isPencil) {
-      pencilGrid[key] = letter; delete grid[key]; revealedCells.delete(key);
+      pencilGrid[key] = value; delete grid[key]; revealedCells.delete(key);
     } else {
-      grid[key] = letter; delete pencilGrid[key];
+      grid[key] = value; delete pencilGrid[key];
       if (isRevealed) revealedCells.add(key); else revealedCells.delete(key);
     }
   } else {
     delete grid[key]; delete pencilGrid[key]; revealedCells.delete(key);
   }
+}
+
+function commitCell(r, c, letter, { isPencil = pencilMode, isRevealed = false } = {}) {
+  setCellState(`${r},${c}`, letter, isPencil, isRevealed);
   updateCellDisplay(r, c);
   send({ type: 'cell_update', row: r, col: c, value: letter, pencil: isPencil, revealed: isRevealed });
 }
@@ -719,26 +709,6 @@ function advance(r, c, dir) {
   }
 }
 
-function stepForward(r, c, dir) {
-  const [dr, dc] = dir === 'down' ? [1, 0] : [0, 1];
-  let nr = r + dr, nc = c + dc;
-  while (nr >= 0 && nr < puzzle.height && nc >= 0 && nc < puzzle.width) {
-    if (!puzzle.cells[nr][nc].black) return [nr, nc];
-    nr += dr; nc += dc;
-  }
-  return [-1, -1];
-}
-
-function stepBack(r, c, dir) {
-  const [dr, dc] = dir === 'down' ? [-1, 0] : [0, -1];
-  let nr = r + dr, nc = c + dc;
-  while (nr >= 0 && nr < puzzle.height && nc >= 0 && nc < puzzle.width) {
-    if (!puzzle.cells[nr][nc].black) return [nr, nc];
-    nr += dr; nc += dc;
-  }
-  return [-1, -1];
-}
-
 function moveBy(r, c, dr, dc) {
   let nr = r + dr, nc = c + dc;
   while (nr >= 0 && nr < puzzle.height && nc >= 0 && nc < puzzle.width) {
@@ -751,23 +721,14 @@ function moveBy(r, c, dr, dc) {
 
 function allWords() {
   const words = [];
-  puzzle.clues.across.forEach(cl => {
-    // Skip continuation entries — Tab only visits the chain head.
-    const first = getChain(cl.number, 'across')[0];
-    const headNum = Array.isArray(first) ? first[0] : first;
-    if (headNum !== cl.number) return;
-    const headDir = Array.isArray(first) ? (first[1] === 'Across' ? 'across' : 'down') : 'across';
+  const collect = (clues, defaultDir) => clues.forEach(cl => {
+    const head = chainHead(cl.number, defaultDir);
+    if (head.num !== cl.number) return; // skip continuation entries — Tab visits chain heads only
     const pos = findClueStart(cl.number);
-    if (pos) words.push({ row: pos.row, col: pos.col, dir: headDir });
+    if (pos) words.push({ row: pos.row, col: pos.col, dir: head.dir });
   });
-  puzzle.clues.down.forEach(cl => {
-    const first = getChain(cl.number, 'down')[0];
-    const headNum = Array.isArray(first) ? first[0] : first;
-    if (headNum !== cl.number) return;
-    const headDir = Array.isArray(first) ? (first[1] === 'Across' ? 'across' : 'down') : 'down';
-    const pos = findClueStart(cl.number);
-    if (pos) words.push({ row: pos.row, col: pos.col, dir: headDir });
-  });
+  collect(puzzle.clues.across, 'across');
+  collect(puzzle.clues.down, 'down');
   return words;
 }
 
@@ -793,11 +754,9 @@ function prevWord() {
 
 function jumpToClue(number, dir) {
   // Always jump to the head of the chain so selection starts at the first run.
-  const first = getChain(number, dir)[0];
-  const headNum = Array.isArray(first) ? first[0] : first;
-  const headDir = Array.isArray(first) ? (first[1] === 'Across' ? 'across' : 'down') : dir;
-  const pos = findClueStart(headNum);
-  if (pos) selectCell(pos.row, pos.col, headDir);
+  const head = chainHead(number, dir);
+  const pos = findClueStart(head.num);
+  if (pos) selectCell(pos.row, pos.col, head.dir);
 }
 
 // ── Clue panel ─────────────────────────────────────────────────────────────
@@ -856,29 +815,31 @@ function updateActiveClue(r, c, dir) {
 function revealLetter() {
   if (!puzzle.solution || sel.row < 0) return;
   const { row, col } = sel;
-  const letter = ((puzzle.solution[row] || [])[col] || '').toUpperCase();
+  const letter = solutionAt(row, col);
   if (letter && letter !== '#') commitCell(row, col, letter, { isPencil: false, isRevealed: true });
 }
 
 function revealWord() {
   if (!puzzle.solution || sel.row < 0) return;
   wordCells(sel.row, sel.col, sel.dir).forEach(([r, c]) => {
-    const letter = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
+    const letter = solutionAt(r, c);
     if (letter && letter !== '#') commitCell(r, c, letter, { isPencil: false, isRevealed: true });
   });
 }
 
 // ── Check ──────────────────────────────────────────────────────────────────
 
+// Clears (r,c) if it holds a letter that contradicts the solution.
+function _clearIfWrong(r, c) {
+  const letter = pencilGrid[`${r},${c}`] || grid[`${r},${c}`];
+  if (!letter) return;
+  const sol = solutionAt(r, c);
+  if (sol && sol !== '#' && letter.toUpperCase() !== sol) commitCell(r, c, '');
+}
+
 function checkWord() {
   if (!puzzle.solution || sel.row < 0) return;
-  wordCells(sel.row, sel.col, sel.dir).forEach(([r, c]) => {
-    const key = `${r},${c}`;
-    const letter = pencilGrid[key] || grid[key];
-    if (!letter) return;
-    const sol = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
-    if (sol && sol !== '#' && letter.toUpperCase() !== sol) commitCell(r, c, '');
-  });
+  wordCells(sel.row, sel.col, sel.dir).forEach(([r, c]) => _clearIfWrong(r, c));
   const entry = wordStartEntry(sel.row, sel.col, sel.dir);
   if (!entry) return;
   const wordKey = `${entry.dir[0]}-${entry.num}`;
@@ -893,12 +854,7 @@ function checkAll() {
   if (!puzzle.solution) return;
   for (let r = 0; r < puzzle.height; r++) {
     for (let c = 0; c < puzzle.width; c++) {
-      if (puzzle.cells[r][c].black) continue;
-      const key = `${r},${c}`;
-      const letter = pencilGrid[key] || grid[key];
-      if (!letter) continue;
-      const sol = ((puzzle.solution[r] || [])[c] || '').toUpperCase();
-      if (sol && sol !== '#' && letter.toUpperCase() !== sol) commitCell(r, c, '');
+      if (!puzzle.cells[r][c].black) _clearIfWrong(r, c);
     }
   }
   const toVerify = new Set();
@@ -1034,6 +990,8 @@ function togglePencilVisibility() {
 function getInput(r, c) { return document.querySelector(`input[data-row="${r}"][data-col="${c}"]`); }
 function getCell(r, c)  { return document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`); }
 function escHtml(str)   { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+// Solution letter at (r,c), upper-cased ('' if none; '#' marks a block).
+function solutionAt(r, c) { return ((puzzle.solution[r] || [])[c] || '').toUpperCase(); }
 
 // ── Button wiring ──────────────────────────────────────────────────────────
 
