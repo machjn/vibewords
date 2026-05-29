@@ -275,6 +275,31 @@
   </div>
 
   <script>
+    // ── Auth helpers ──────────────────────────────────────────────────────
+
+    const PW_KEY = 'vibewords_connector_password';
+
+    function getStoredPassword() {
+      return localStorage.getItem(PW_KEY) || null;
+    }
+
+    function authHeaders(gated) {
+      if (!gated) return {};
+      const pw = getStoredPassword();
+      return pw ? { 'Authorization': `Bearer ${pw}` } : {};
+    }
+
+    async function withAuth(gated, fetchFn) {
+      let res = await fetchFn(authHeaders(gated));
+      if (res.status === 401 && gated) {
+        const pw = window.prompt('Enter connector password:');
+        if (pw === null) throw new Error('Authentication cancelled');
+        localStorage.setItem(PW_KEY, pw);
+        res = await fetchFn({ 'Authorization': `Bearer ${pw}` });
+      }
+      return res;
+    }
+
     // ── Scraper metadata ──────────────────────────────────────────────────
 
     let scrapers = [];
@@ -350,7 +375,8 @@
     dateInput.max   = today;
 
     async function createFromDate() {
-      const scraper = document.getElementById('type-select').value;
+      const scraperEntry = selectedDateScraper();
+      const scraper = scraperEntry?.id;
       const d = dateInput.value;
       if (!scraper || !d) return;
 
@@ -358,11 +384,13 @@
       dateBtn.disabled = true;
 
       try {
-        const res = await fetch('/api/rooms/date', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scraper, date: d }),
-        });
+        const res = await withAuth(scraperEntry?.gated ?? false, headers =>
+          fetch('/api/rooms/date', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...headers },
+            body: JSON.stringify({ scraper, date: d }),
+          })
+        );
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Failed to create room');
         location.href = `/room/${data.room_id}`;
@@ -386,18 +414,20 @@
       if (!url) return;
 
       // Find the first URL-capable scraper
-      const scraper = scrapers.find(s => s.supports_url);
-      if (!scraper) return;
+      const scraperEntry = scrapers.find(s => s.supports_url);
+      if (!scraperEntry) return;
 
       setStatus(urlStatus, 'loading', 'Fetching crossword…');
       urlBtn.disabled = true;
 
       try {
-        const res = await fetch('/api/rooms/url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scraper: scraper.id, url }),
-        });
+        const res = await withAuth(scraperEntry.gated ?? false, headers =>
+          fetch('/api/rooms/url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...headers },
+            body: JSON.stringify({ scraper: scraperEntry.id, url }),
+          })
+        );
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Failed to create room');
         location.href = `/room/${data.room_id}`;
@@ -426,12 +456,16 @@
     });
     fileInput.addEventListener('change', () => { if (fileInput.files[0]) upload(fileInput.files[0]); });
 
+    let ipuzGated = false;
+
     async function upload(file) {
       setStatus(fileStatus, 'loading', 'Creating room…');
       const form = new FormData();
       form.append('file', file);
       try {
-        const res = await fetch('/api/rooms', { method: 'POST', body: form });
+        const res = await withAuth(ipuzGated, headers =>
+          fetch('/api/rooms', { method: 'POST', headers, body: form })
+        );
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Upload failed');
         location.href = `/room/${data.room_id}`;
@@ -454,6 +488,8 @@
         loadScrapers(),
         fetch('/api/config').then(r => r.json()).catch(() => ({})),
       ]);
+
+      ipuzGated = appCfg.ipuz_gated ?? false;
 
       if (!appCfg.ipuz_enabled) {
         document.getElementById('ipuz-section').style.display = 'none';

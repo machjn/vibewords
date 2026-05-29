@@ -13,3 +13,7 @@ connectors:
     - independent
     - guardian
     - ipuz
+  gated:
+    - guardian
+    - independent
+  password: "asd"

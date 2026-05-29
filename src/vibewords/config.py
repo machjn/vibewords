@@ -44,6 +44,8 @@ class UiConfig(ConfigBase):
 @dataclass
 class ConnectorsConfig(ConfigBase):
     enabled: list = field(default_factory=lambda: list(_ALL_CONNECTORS))
+    gated: list = field(default_factory=list)
+    password: str | None = None
 
 
 @dataclass
@@ -62,6 +64,8 @@ def _apply_dict(section_obj: Any, data: dict) -> None:
         existing = getattr(section_obj, f.name)
         if isinstance(existing, list):
             setattr(section_obj, f.name, list(data[f.name]))
+        elif existing is None or data[f.name] is None:
+            setattr(section_obj, f.name, data[f.name])
         else:
             setattr(section_obj, f.name, type(existing)(data[f.name]))
 
@@ -76,6 +80,8 @@ def _apply_env(section_name: str, section_obj: Any) -> None:
         existing = getattr(section_obj, f.name)
         if isinstance(existing, list):
             setattr(section_obj, f.name, [s.strip() for s in val.split(',') if s.strip()])
+        elif existing is None:
+            setattr(section_obj, f.name, val)
         else:
             setattr(section_obj, f.name, type(existing)(val))
 

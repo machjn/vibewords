@@ -13,7 +13,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
-from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import BackgroundTasks, FastAPI, File, Header, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -28,6 +28,14 @@ from vibewords.scrapers.independent import ScraperError as _IndependentScraperEr
 ScraperError = (_GuardianScraperError, _IndependentScraperError)
 
 cfg = load_config()
+
+
+def _check_connector_auth(source: str, authorization: str | None) -> None:
+    if source not in cfg.connectors.gated:
+        return
+    if cfg.connectors.password is None or authorization != f"Bearer {cfg.connectors.password}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
 
 _ALL_SCRAPERS = {
     "guardian_cryptic": {
@@ -374,9 +382,14 @@ def _make_room(puzzle: Puzzle, source: str = "upload") -> str:
 # ── Room creation: file upload ─────────────────────────────────────────────
 
 @app.post("/api/rooms")
-async def create_room(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def create_room(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    authorization: str | None = Header(default=None),
+):
     if "ipuz" not in cfg.connectors.enabled:
         raise HTTPException(status_code=404, detail="IPUZ upload is not enabled")
+    _check_connector_auth("ipuz", authorization)
     prune_rooms()
     content = await file.read()
     try:
@@ -397,6 +410,7 @@ def get_config():
         "hold_delay_ms": cfg.ui.hold_delay_ms,
         "hold_drift_px": cfg.ui.hold_drift_px,
         "ipuz_enabled": "ipuz" in cfg.connectors.enabled,
+        "ipuz_gated": "ipuz" in cfg.connectors.gated,
     }
 
 
@@ -410,6 +424,7 @@ def list_scrapers():
             "source": v["source"], "source_name": v["source_name"],
             "name": v["name"], "supports_url": v["supports_url"],
             "schedule": v["schedule"],
+            "gated": v["source"] in cfg.connectors.gated,
         }
         for k, v in _SCRAPERS.items()
     ]
@@ -423,11 +438,16 @@ class RoomFromDate(BaseModel):
 
 
 @app.post("/api/rooms/date")
-def create_room_from_date(body: RoomFromDate, background_tasks: BackgroundTasks):
+def create_room_from_date(
+    body: RoomFromDate,
+    background_tasks: BackgroundTasks,
+    authorization: str | None = Header(default=None),
+):
     prune_rooms()
     entry = _SCRAPERS.get(body.scraper)
     if entry is None:
         raise HTTPException(status_code=400, detail=f"Unknown scraper: {body.scraper!r}")
+    _check_connector_auth(entry["source"], authorization)
 
     try:
         puzzle_date = date.fromisoformat(body.date)
@@ -463,11 +483,16 @@ class RoomFromUrl(BaseModel):
 
 
 @app.post("/api/rooms/url")
-def create_room_from_url(body: RoomFromUrl, background_tasks: BackgroundTasks):
+def create_room_from_url(
+    body: RoomFromUrl,
+    background_tasks: BackgroundTasks,
+    authorization: str | None = Header(default=None),
+):
     prune_rooms()
     entry = _SCRAPERS.get(body.scraper)
     if entry is None:
         raise HTTPException(status_code=400, detail=f"Unknown scraper: {body.scraper!r}")
+    _check_connector_auth(entry["source"], authorization)
     if not entry["supports_url"]:
         raise HTTPException(status_code=400, detail=f"{entry['name']} does not support URL-based fetching")
 
