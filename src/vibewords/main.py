@@ -21,7 +21,8 @@ from pydantic import BaseModel
 
 from vibewords.config import load_config
 from vibewords.connectors import Connector
-from vibewords.ipuz_parser import Puzzle, parse_ipuz
+from vibewords.ipuz_parser import parse_ipuz
+from vibewords.crossword_model import Crossword
 from vibewords.scrapers import Scraper
 from vibewords.scrapers.guardian import GuardianScraper
 from vibewords.scrapers.guardian import ScraperError as _GuardianScraperError
@@ -88,7 +89,7 @@ def _make_short_title(title: str) -> str:
     return s or title
 
 
-def _build_clue_maps(puzzle: Puzzle):
+def _build_clue_maps(puzzle: Crossword):
     """Build two lookup tables used to keep verified_clues consistent.
 
     cell_to_clue_keys  ("r,c" -> set of clue keys)
@@ -189,7 +190,7 @@ def _build_clue_maps(puzzle: Puzzle):
 
 
 class Room:
-    def __init__(self, puzzle: Puzzle):
+    def __init__(self, puzzle: Crossword):
         self.puzzle = puzzle
         self.name: Optional[str] = None  # custom room name; falls back to puzzle title
         self.grid: Dict[str, str] = {}
@@ -381,7 +382,7 @@ async def _fifteensquared_background(room_id: str):
     await room.broadcast({"type": "solutions_url", "url": url})
 
 
-def _make_room(puzzle: Puzzle, source: str = "upload") -> str:
+def _make_room(puzzle: Crossword, source: str = "upload") -> str:
     if not puzzle.cells:
         raise HTTPException(status_code=400, detail="Puzzle has no grid data")
     room_id = uuid.uuid4().hex[:8]

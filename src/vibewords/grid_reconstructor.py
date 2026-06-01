@@ -585,7 +585,7 @@ def parse_clue_length(clue_text: str) -> Optional[int]:
 
 def specs_from_puzzle(puzzle) -> list[WordSpec]:
     """
-    Extract WordSpecs from a parsed Puzzle (vibewords.ipuz_parser.Puzzle).
+    Extract WordSpecs from a parsed Crossword (vibewords.crossword_model.Crossword).
 
     Word lengths are measured directly from the grid, so this works even when
     the clue text doesn't contain a length indicator.  Use this to test the

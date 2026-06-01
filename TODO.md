@@ -35,7 +35,7 @@ Minor:
 - show room timer in room dropdown? /
 - abstract application config like wheel delay hold, drift etc. into a yaml config file that the application reads at startup /
 - room dropdown menu width should match the element width, this has some implications for its contents /
-- add publish date to room menu
+- add publish date to room menu /
 - bug: when entering text before an already filled cell, that cell gets highlighted. kinda of makes sense but not the behaviour we want.
 - right-click on name chip to randomize colour
 - bug: clipping when scrolling clue panel /
@@ -54,14 +54,15 @@ Minor:
 - add puzzle type? no, seems unecessary and restrictive  x
 - proper adherence to the ipuz API? Though it can be vague, we should at least set type correctly.
 - make single revealed and checked letters immutable too? probably for sake of consistancy
-- bug: visual bug that some gridlines appear thicker than others. this seems to happen on other crossword sites too
+- bug: visual bug that some gridlines appear thicker than others. this seems to happen on other crossword sites too. Basically I'd have to move away from CSS and use a canvas element. Then you lose browser-native text input. Apparently some apps layer that on top of a canvas. Anyway, not doing for now x
 
 Major:
 - Add other scrapers
 - store state in db rather than memory
 - add application awareness of IAP identity, so that we can have admin users who can delete rooms, infer names etc.
 - support mobile? /
-
+- support solutions, with a solutions panel that disappears at small screen sizes similar to the clue-panel
+- separate layers. crossword run-time if you will, the scrapers layer on top as an application module, and finally the site logic itself
 
 Ideas:
 - add crossword editor?
