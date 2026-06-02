@@ -55,6 +55,9 @@ Minor:
 - proper adherence to the ipuz API? Though it can be vague, we should at least set type correctly.
 - make single revealed and checked letters immutable too? probably for sake of consistancy
 - bug: visual bug that some gridlines appear thicker than others. this seems to happen on other crossword sites too. Basically I'd have to move away from CSS and use a canvas element. Then you lose browser-native text input. Apparently some apps layer that on top of a canvas. Anyway, not doing for now x
+- improve .xw format to include proper separators for parts of crossword clue. This might allow us to switch to LALR parser, and let us catch errors earlier. For example the bug where extra parentheses at the end break the look forward parsing.
+- show the clue length indicators (3,3) or whatever in the clue-panel
+- add support for displaying basic formatting in clues like bold/italics. How is this handled in ipuz? How should we store that info? Take clue as markdown? ehhhh
 
 Major:
 - Add other scrapers
@@ -63,6 +66,7 @@ Major:
 - support mobile? /
 - support solutions, with a solutions panel that disappears at small screen sizes similar to the clue-panel
 - separate layers. crossword run-time if you will, the scrapers layer on top as an application module, and finally the site logic itself
+- improve terminal UI fo xw
 
 Ideas:
 - add crossword editor?

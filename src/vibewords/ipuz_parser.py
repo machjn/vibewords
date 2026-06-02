@@ -48,7 +48,7 @@ def parse_ipuz(data) -> Crossword:
                     saved_row.append("")
             saved.append(saved_row)
 
-    return Crossword(
+    crossword = Crossword(
         width=width,
         height=height,
         cells=cells,
@@ -62,6 +62,57 @@ def parse_ipuz(data) -> Crossword:
         links=raw.get("links", {}),
         source_url=raw.get("origin", ""),
     )
+    crossword.validate()
+    return crossword
+
+
+def to_ipuz(crossword: Crossword) -> bytes:
+    """Serialise a Crossword to ipuz JSON bytes."""
+    puzzle_grid = []
+    for row in crossword.cells:
+        puzzle_grid.append([
+            "#" if cell.black else ({"cell": cell.number} if cell.number else 0)
+            for cell in row
+        ])
+
+    doc = {
+        "version": "http://ipuz.org/v2",
+        "kind": ["http://ipuz.org/crossword#1"],
+        "dimensions": {"width": crossword.width, "height": crossword.height},
+        "puzzle": puzzle_grid,
+        "clues": {
+            "Across": [[c.number if c.label == str(c.number) else c.label, c.text] for c in crossword.clues_across],
+            "Down":   [[c.number if c.label == str(c.number) else c.label, c.text] for c in crossword.clues_down],
+        },
+    }
+
+    for key, val in [
+        ("title",  crossword.title),
+        ("author", crossword.author),
+        ("date",   crossword.date),
+        ("origin", crossword.source_url),
+    ]:
+        if val:
+            doc[key] = val
+
+    if crossword.links:
+        doc["links"] = crossword.links
+
+    if crossword.solution is not None:
+        doc["solution"] = [
+            ["#" if crossword.cells[r][c].black else (v or 0)
+             for c, v in enumerate(row)]
+            for r, row in enumerate(crossword.solution)
+        ]
+
+    if crossword.saved is not None:
+        doc["saved"] = [
+            ["#" if crossword.cells[r][c].black else (v or 0)
+             for c, v in enumerate(row)]
+            for r, row in enumerate(crossword.saved)
+        ]
+
+    return (json.dumps(doc, indent=2, ensure_ascii=False) + "\n").encode()
 
 
 def _parse_cell(row: int, col: int, val) -> Cell:

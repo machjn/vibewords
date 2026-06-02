@@ -7,6 +7,7 @@ import re
 import time
 import uuid
 from contextlib import asynccontextmanager
+from dataclasses import replace as dc_replace
 from datetime import date
 from pathlib import Path
 from typing import Dict, Optional
@@ -15,13 +16,13 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from vibewords.config import load_config
 from vibewords.connectors import Connector
-from vibewords.ipuz_parser import parse_ipuz
+from vibewords.ipuz_parser import parse_ipuz, to_ipuz
 from vibewords.crossword_model import Crossword
 from vibewords.scrapers import Scraper
 from vibewords.scrapers.guardian import GuardianScraper
@@ -607,6 +608,29 @@ async def room_page(room_id: str):
     if room_id not in rooms:
         return FileResponse("static/404.html", status_code=404)
     return FileResponse("static/room.html")
+
+
+# ── Export ─────────────────────────────────────────────────────────────────
+
+@app.get("/api/rooms/{room_id}/export")
+async def export_room(room_id: str):
+    if room_id not in rooms:
+        raise HTTPException(status_code=404, detail="Room not found")
+    room = rooms[room_id]
+    saved = [
+        [
+            room.grid.get(f"{r},{c}") or room.pencil_grid.get(f"{r},{c}") or ""
+            for c in range(room.puzzle.width)
+        ]
+        for r in range(room.puzzle.height)
+    ]
+    content = to_ipuz(dc_replace(room.puzzle, saved=saved))
+    filename = re.sub(r"[^\w\-.]", "_", room.puzzle.title or "crossword") + ".ipuz"
+    return Response(
+        content=content,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ── WebSocket ──────────────────────────────────────────────────────────────

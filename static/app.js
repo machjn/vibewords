@@ -1021,47 +1021,15 @@ function updateActionButtons() {
 
 // ── Export ─────────────────────────────────────────────────────────────────
 
-function exportIpuz() {
+async function exportIpuz() {
   if (!puzzle) return;
-
-  const puzzleGrid = puzzle.cells.map(row =>
-    row.map(cell => {
-      if (cell.black) return '#';
-      if (cell.number) return { cell: cell.number };
-      return 0;
-    })
-  );
-
-  const savedGrid = puzzle.cells.map((row, r) =>
-    row.map((cell, c) => {
-      if (cell.black) return '#';
-      return grid[`${r},${c}`] || pencilGrid[`${r},${c}`] || 0;
-    })
-  );
-
-  const ipuz = {
-    version: 'http://ipuz.org/v2',
-    kind: ['http://ipuz.org/crossword#1'],
-    title: puzzle.title || '',
-    author: puzzle.author || '',
-    block: '#',
-    empty: '0',
-    dimensions: { width: puzzle.width, height: puzzle.height },
-    puzzle: puzzleGrid,
-    clues: {
-      Across: puzzle.clues.across.map(cl => [cl.number, cl.text]),
-      Down:   puzzle.clues.down.map(cl   => [cl.number, cl.text]),
-    },
-    saved: savedGrid,
-  };
-
-  if (puzzle.solution) ipuz.solution = puzzle.solution;
-
-  const blob = new Blob([JSON.stringify(ipuz, null, 2)], { type: 'application/json' });
+  const resp = await fetch(`/api/rooms/${roomId}/export`);
+  if (!resp.ok) return;
+  const blob = await resp.blob();
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = `${(puzzle.title || 'vibewords').replace(/[^a-z0-9]/gi, '_')}.ipuz`;
+  a.download = resp.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1] ?? 'crossword.ipuz';
   a.click();
   URL.revokeObjectURL(url);
 }
