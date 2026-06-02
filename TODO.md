@@ -68,7 +68,7 @@ Major:
 - store state in db rather than memory
 - add application awareness of IAP identity, so that we can have admin users who can delete rooms, infer names etc.
 - support mobile? /
-- support solutions, with a solutions panel that disappears at small screen sizes similar to the clue-panel
+- support annotated solutions, with a solutions panel that disappears at small screen sizes similar to the clue-panel. Not sure if this is supported in ipuz
 - separate layers. crossword run-time if you will, the scrapers layer on top as an application module, and finally the site logic itself
 - improve terminal UI fo xw
 
