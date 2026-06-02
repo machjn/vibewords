@@ -57,7 +57,11 @@ Minor:
 - bug: visual bug that some gridlines appear thicker than others. this seems to happen on other crossword sites too. Basically I'd have to move away from CSS and use a canvas element. Then you lose browser-native text input. Apparently some apps layer that on top of a canvas. Anyway, not doing for now x
 - improve .xw format to include proper separators for parts of crossword clue. This might allow us to switch to LALR parser, and let us catch errors earlier. For example the bug where extra parentheses at the end break the look forward parsing.
 - show the clue length indicators (3,3) or whatever in the clue-panel
-- add support for displaying basic formatting in clues like bold/italics. How is this handled in ipuz? How should we store that info? Take clue as markdown? ehhhh
+- add support for displaying basic formatting in clues like bold/italics. How is this handled in ipuz? How should we store that info? Take clue as markdown? maybe html tags ehhhh
+- support importing .xw once it stabilizes
+- support export as .xw
+- support author comments? is this supported in ipuz?
+- content should be separate repo include as a submodule?
 
 Major:
 - Add other scrapers
@@ -78,6 +82,7 @@ Ideas:
 - put the pieces together: use the reconstructed grid and the clues/answers to construct a full puzzle object from fifteensquared. then add a script which does this and exports it to ipuz
 - make crossword surround be drawable? How would this work on mobile though?
 - associate themes with parlance, which are basically different sets of text strings. e.g. in neon theme, 'themes' are 'vibes', reveal is 'small/big cheat?', "Clear" is "nah", check is "guess", 
+- Terminal frontend for vibewords using Ink or something? Kinda overkill though
 
 ## Reverse Engineering Grids
 

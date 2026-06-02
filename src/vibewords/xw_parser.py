@@ -122,9 +122,9 @@ def _place_solution(
     letters = [ch for ch in solution_str.upper() if ch.isalpha()]
     letter_idx = 0
 
-    segments = [(clue_num, direction)] + (
+    segments = (
         [(n, "A" if d == "Across" else "D") for n, d in chain]
-        if chain else []
+        if chain else [(clue_num, direction)]
     )
 
     for seg_num, seg_dir in segments:

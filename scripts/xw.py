@@ -26,8 +26,11 @@ def _load(path: Path) -> Crossword:
         import json
         from vibewords.ipuz_parser import parse_ipuz
         return parse_ipuz(json.loads(path.read_text(encoding="utf-8")))
+    elif suffix == ".puz":
+        from vibewords.puz_parser import parse_puz
+        return parse_puz(path.read_bytes())
     else:
-        raise ValueError(f"Unrecognised file format: {path.suffix!r} (expected .xw or .ipuz)")
+        raise ValueError(f"Unrecognised file format: {path.suffix!r} (expected .xw, .ipuz, or .puz)")
 
 
 def cmd_export(args: argparse.Namespace) -> int:

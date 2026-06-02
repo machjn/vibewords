@@ -1,0 +1,743 @@
+{
+  "version": "http://ipuz.org/v2",
+  "kind": [
+    "http://ipuz.org/crossword#1"
+  ],
+  "dimensions": {
+    "width": 15,
+    "height": 15
+  },
+  "puzzle": [
+    [
+      {
+        "cell": 1
+      },
+      0,
+      {
+        "cell": 2
+      },
+      0,
+      {
+        "cell": 3
+      },
+      0,
+      {
+        "cell": 4
+      },
+      "#",
+      {
+        "cell": 5
+      },
+      0,
+      {
+        "cell": 6
+      },
+      0,
+      {
+        "cell": 7
+      },
+      0,
+      {
+        "cell": 8
+      }
+    ],
+    [
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 9
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      "#",
+      {
+        "cell": 10
+      },
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 11
+      },
+      0,
+      0,
+      0,
+      0,
+      "#",
+      {
+        "cell": 12
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      "#",
+      "#",
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      "#",
+      "#",
+      0,
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 13
+      },
+      0,
+      {
+        "cell": 14
+      },
+      0,
+      0,
+      0,
+      0,
+      "#",
+      {
+        "cell": 15
+      },
+      0,
+      {
+        "cell": 16
+      },
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      "#",
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      "#",
+      "#",
+      "#",
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      "#"
+    ],
+    [
+      {
+        "cell": 17
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      {
+        "cell": 18
+      },
+      "#",
+      {
+        "cell": 19
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      {
+        "cell": 20
+      }
+    ],
+    [
+      0,
+      "#",
+      0,
+      "#",
+      "#",
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      "#",
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 21
+      },
+      0,
+      0,
+      0,
+      {
+        "cell": 22
+      },
+      0,
+      0,
+      0,
+      0,
+      "#",
+      {
+        "cell": 23
+      },
+      0,
+      {
+        "cell": 24
+      },
+      0,
+      0
+    ],
+    [
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 25
+      },
+      0,
+      0,
+      0,
+      0,
+      "#",
+      {
+        "cell": 26
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0,
+      "#",
+      0
+    ],
+    [
+      {
+        "cell": 27
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      "#",
+      {
+        "cell": 28
+      },
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  ],
+  "clues": {
+    "Across": [
+      [
+        1,
+        "Ma tesla à la casse? Je vais dormir dessus"
+      ],
+      [
+        5,
+        "Tram C va en arrière, là-dedans on a 92140 à peu près"
+      ],
+      [
+        9,
+        "Reconduirai-je les chefs d'entreprise, de la recherche, de l'agriculture et de l'industrie, qui, sans moi, prennent des nouilles comme entrée?"
+      ],
+      [
+        10,
+        "Chanteuse étant la personne au début avec un homme qui a perdu la tête"
+      ],
+      [
+        "11, 17",
+        "Meilleure fille, privée de l'education réligieuse, fait en désordre une excellente pâtisserie"
+      ],
+      [
+        12,
+        "Se deplacer comme un ivrogne, c'est presenter autrement"
+      ],
+      [
+        13,
+        "Derrière la barrière ?"
+      ],
+      [
+        15,
+        "Vance et le fou dans un territoire enfermé"
+      ],
+      [
+        17,
+        "Des fêtes à Majorque, ou un repos là-bas non commencé, encerclé par les forces spéciales"
+      ],
+      [
+        19,
+        "Faire un vent encore?"
+      ],
+      [
+        21,
+        "Le Royaume-Uni et un iranien fou se regroupent pour trouver un européen de l'Est"
+      ],
+      [
+        23,
+        "C'est un signe, bien entendu"
+      ],
+      [
+        25,
+        "Une série de notes évoque à l'oreille un compositeur romantique"
+      ],
+      [
+        26,
+        "Tordue de la mine et première muse de Proust"
+      ],
+      [
+        27,
+        "Ne peuvent pas être sentis"
+      ],
+      [
+        28,
+        "Si si, *ham*, une fois mélangé, est une spécialité japonaise"
+      ]
+    ],
+    "Down": [
+      [
+        1,
+        "Cauchemar imbattable contient un instrument en bois et métal"
+      ],
+      [
+        2,
+        "A-t-il, M. Fou, une langue?"
+      ],
+      [
+        3,
+        "Doucement ! C’est un élément instable juste au-dessus du centre du ventre"
+      ],
+      [
+        4,
+        "Crispé, pressé, si père devient saint"
+      ],
+      [
+        5,
+        "Chérie, *I belong to you*. Ce genre de chose nous emmerde"
+      ],
+      [
+        6,
+        "10 à Manchester, un géant de tech"
+      ],
+      [
+        7,
+        "Laissant entrer ma tante, après une quantité de temps infinitésimale, c'est tout dérangé"
+      ],
+      [
+        8,
+        "C'est de la speculation, il faut le prouver"
+      ],
+      [
+        14,
+        "Ce que je dois faire quand une indice ne marche pas?"
+      ],
+      [
+        16,
+        "OUAGADOUGOU, ASHGABAT, elles le sont doublement?"
+      ],
+      [
+        17,
+        "Voyez 11 Across."
+      ],
+      [
+        18,
+        "La dernière troupe, semi-préparée, entouré par la *Schutzstaffel*, des tremblements s'ensuivent"
+      ],
+      [
+        19,
+        "Des sauteurs émergent d'une pièce de l'est, suivi par les décapité"
+      ],
+      [
+        20,
+        "Retire cent. Bizzarement, c'est bien diminué"
+      ],
+      [
+        22,
+        "Si, à New York, un rongeur va dans la mauvaise direction, on a un repas nocturne"
+      ],
+      [
+        24,
+        "Baba, par exemple, prends l'abri ici et là; les voleurs en ont souvent besoin"
+      ]
+    ]
+  },
+  "title": "Prototype de Cryptique Française",
+  "author": "Qube",
+  "date": "02/03/2026",
+  "links": {
+    "Across": {
+      "11": [
+        [
+          11,
+          "Across"
+        ],
+        [
+          17,
+          "Down"
+        ]
+      ]
+    },
+    "Down": {
+      "17": [
+        [
+          11,
+          "Across"
+        ],
+        [
+          17,
+          "Down"
+        ]
+      ]
+    }
+  },
+  "solution": [
+    [
+      "M",
+      "A",
+      "T",
+      "E",
+      "L",
+      "A",
+      "S",
+      "#",
+      "C",
+      "L",
+      "A",
+      "M",
+      "A",
+      "R",
+      "T"
+    ],
+    [
+      "A",
+      "#",
+      "A",
+      "#",
+      "E",
+      "#",
+      "T",
+      "#",
+      "H",
+      "#",
+      "P",
+      "#",
+      "D",
+      "#",
+      "H"
+    ],
+    [
+      "R",
+      "A",
+      "M",
+      "E",
+      "N",
+      "E",
+      "R",
+      "A",
+      "I",
+      "#",
+      "P",
+      "O",
+      "M",
+      "M",
+      "E"
+    ],
+    [
+      "I",
+      "#",
+      "I",
+      "#",
+      "T",
+      "#",
+      "E",
+      "#",
+      "E",
+      "#",
+      "L",
+      "#",
+      "E",
+      "#",
+      "O"
+    ],
+    [
+      "M",
+      "I",
+      "L",
+      "L",
+      "E",
+      "#",
+      "S",
+      "E",
+      "R",
+      "P",
+      "E",
+      "N",
+      "T",
+      "E",
+      "R"
+    ],
+    [
+      "B",
+      "#",
+      "#",
+      "#",
+      "M",
+      "#",
+      "S",
+      "#",
+      "I",
+      "#",
+      "#",
+      "#",
+      "T",
+      "#",
+      "I"
+    ],
+    [
+      "A",
+      "R",
+      "R",
+      "I",
+      "E",
+      "R",
+      "É",
+      "#",
+      "E",
+      "N",
+      "C",
+      "L",
+      "A",
+      "V",
+      "E"
+    ],
+    [
+      "#",
+      "#",
+      "E",
+      "#",
+      "N",
+      "#",
+      "#",
+      "#",
+      "#",
+      "#",
+      "A",
+      "#",
+      "N",
+      "#",
+      "#"
+    ],
+    [
+      "F",
+      "I",
+      "É",
+      "S",
+      "T",
+      "A",
+      "S",
+      "#",
+      "R",
+      "E",
+      "P",
+      "E",
+      "T",
+      "E",
+      "R"
+    ],
+    [
+      "E",
+      "#",
+      "C",
+      "#",
+      "#",
+      "#",
+      "E",
+      "#",
+      "A",
+      "#",
+      "I",
+      "#",
+      "#",
+      "#",
+      "E"
+    ],
+    [
+      "U",
+      "K",
+      "R",
+      "A",
+      "I",
+      "N",
+      "I",
+      "E",
+      "N",
+      "#",
+      "T",
+      "R",
+      "A",
+      "I",
+      "T"
+    ],
+    [
+      "I",
+      "#",
+      "I",
+      "#",
+      "F",
+      "#",
+      "S",
+      "#",
+      "I",
+      "#",
+      "A",
+      "#",
+      "L",
+      "#",
+      "R"
+    ],
+    [
+      "L",
+      "I",
+      "S",
+      "Z",
+      "T",
+      "#",
+      "M",
+      "A",
+      "D",
+      "E",
+      "L",
+      "E",
+      "I",
+      "N",
+      "E"
+    ],
+    [
+      "L",
+      "#",
+      "L",
+      "#",
+      "A",
+      "#",
+      "E",
+      "#",
+      "É",
+      "#",
+      "E",
+      "#",
+      "B",
+      "#",
+      "C"
+    ],
+    [
+      "E",
+      "X",
+      "E",
+      "C",
+      "R",
+      "É",
+      "S",
+      "#",
+      "S",
+      "A",
+      "S",
+      "H",
+      "I",
+      "M",
+      "I"
+    ]
+  ]
+}
