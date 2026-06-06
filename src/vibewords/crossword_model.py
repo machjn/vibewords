@@ -1,5 +1,18 @@
+import re
 from dataclasses import dataclass, field
 from typing import Optional
+
+
+def _normalise_date(raw: str) -> str:
+    """Normalise a date string to ISO YYYY-MM-DD; return '' if unrecognised."""
+    raw = raw.strip()
+    if re.fullmatch(r'\d{4}-\d{2}-\d{2}', raw):
+        return raw
+    m = re.fullmatch(r'(\d{1,2})/(\d{1,2})/(\d{4})', raw)
+    if m:
+        d, mo, y = m.group(1), m.group(2), m.group(3)
+        return f"{y}-{mo.zfill(2)}-{d.zfill(2)}"
+    return ''
 
 
 @dataclass
@@ -33,6 +46,9 @@ class Crossword:
     date: str = ""        # ISO format YYYY-MM-DD, if known
     links: dict = field(default_factory=dict)  # {direction: {clue_num: [chain]}}
     source_url: str = ""  # public URL of the original puzzle, if known
+
+    def __post_init__(self):
+        self.date = _normalise_date(self.date)
 
     def __str__(self) -> str:
         lines = []

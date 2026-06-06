@@ -18,6 +18,7 @@ function _formatRoomAge(ms) {
 function _formatPuzzleDate(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  if (!y || !m || !d || m < 1 || m > 12) return 'n/a';
   return `${d} ${months[m - 1]} ${y}`;
 }
 
