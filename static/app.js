@@ -150,7 +150,13 @@ function handleMessage(msg) {
       } else {
         srcLink.style.display = 'none';
       }
-      updateSolutionsLink(puzzle.solutions_url);
+      if (puzzle.solutions_eligible) updateSolutionsLink(puzzle.solutions_url);
+      else {
+        const el = document.getElementById('solutions-link');
+        el.textContent = 'Solutions: ineligible';
+        el.className = 'room-chip-link muted';
+        el.removeAttribute('href');
+      }
       updatePlayerList();
       updateActionButtons();
       if (msg.room_created_at && !_roomAgeTimer) {
@@ -1193,14 +1199,12 @@ document.getElementById('room-id-display').textContent = roomId;
 
 function updateSolutionsLink(url) {
   const el = document.getElementById('solutions-link');
+  el.removeAttribute('href');
+  el.className = 'room-chip-link muted';
   if (url === null || url === undefined) {
     el.textContent = 'Solutions (15²): searching…';
-    el.className = 'room-chip-link muted';
-    el.removeAttribute('href');
   } else if (url === '') {
     el.textContent = 'Solutions (15²): not found';
-    el.className = 'room-chip-link muted';
-    el.removeAttribute('href');
   } else {
     el.textContent = 'Solutions (15²)';
     el.className = 'room-chip-link';

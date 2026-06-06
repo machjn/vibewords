@@ -58,6 +58,7 @@ def parse_ipuz(data) -> Crossword:
         saved=saved,
         title=raw.get("title", ""),
         author=raw.get("author", ""),
+        publisher=raw.get("publisher", ""),
         date=raw.get("date", ""),
         links=raw.get("links", {}),
         source_url=raw.get("origin", ""),
@@ -87,10 +88,11 @@ def to_ipuz(crossword: Crossword) -> bytes:
     }
 
     for key, val in [
-        ("title",  crossword.title),
-        ("author", crossword.author),
-        ("date",   crossword.date),
-        ("origin", crossword.source_url),
+        ("title",     crossword.title),
+        ("author",    crossword.author),
+        ("publisher", crossword.publisher),
+        ("date",      crossword.date),
+        ("origin",    crossword.source_url),
     ]:
         if val:
             doc[key] = val

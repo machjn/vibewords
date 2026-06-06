@@ -274,6 +274,7 @@ class Room:
         if self.puzzle.links:
             d["links"] = self.puzzle.links
         d["solutions_url"] = self.solutions_url
+        d["solutions_eligible"] = _fifteensquared_eligible(self.puzzle)
         return d
 
     def users_list(self) -> list:
@@ -369,10 +370,18 @@ def prune_rooms():
         logger.info("Pruned %d stale room(s) | active=%d", len(stale), len(rooms))
 
 
+def _fifteensquared_eligible(puzzle: Crossword) -> bool:
+    publisher_ok = any(p in puzzle.publisher.lower() for p in ('guardian', 'independent'))
+    title_ok = 'cryptic' in puzzle.title.lower()
+    return publisher_ok and title_ok
+
+
 async def _fifteensquared_background(room_id: str):
     """Fetch a FifteenSquared solutions URL in the background and broadcast the result."""
     room = rooms.get(room_id)
-    if not room or not room.puzzle.source_url:
+    if not room:
+        return
+    if not room.puzzle.source_url or not _fifteensquared_eligible(room.puzzle):
         return
     url = await asyncio.get_event_loop().run_in_executor(
         None, _fetch_fifteensquared_url, room.puzzle.source_url
