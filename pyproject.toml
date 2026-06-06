@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vibewords"
-version = "0.3.1"
+version = "0.3.2"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
@@ -13,6 +13,9 @@ dependencies = [
     "pyyaml>=6.0",
     "lark>=1.1",
 ]
+
+[project.scripts]
+xw = "vibewords.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
