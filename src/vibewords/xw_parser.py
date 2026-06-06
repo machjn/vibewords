@@ -143,6 +143,33 @@ def _place_solution(
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+
+def _clean_xw_answer(raw: str, expected_letters: int) -> str:
+    """Return the answer string with separators, discarding any trailing markers.
+
+    Takes exactly expected_letters alphanumeric characters from raw, preserving
+    any hyphen or space separators that appear between them.
+    e.g. _clean_xw_answer("MILLE-FEUILLE", 12) → "MILLE-FEUILLE"
+         _clean_xw_answer("SERPENTER x", 9)    → "SERPENTER"
+    """
+    if not expected_letters:
+        return ""
+    result: list[str] = []
+    count = 0
+    for ch in raw:
+        if ch.isalpha() or ch.isdigit():
+            if count < expected_letters:
+                result.append(ch.upper())
+                count += 1
+        elif ch in ('-', ' ') and result and result[-1] not in ('-', ' '):
+            result.append(ch)
+    while result and not result[-1].isalnum():
+        result.pop()
+    return "".join(result)
+
+
+# ---------------------------------------------------------------------------
 # Transformer
 
 @v_args(inline=True)
@@ -229,10 +256,12 @@ class _XwTransformer(Transformer):
         for direction, clue_list in clue_blocks:
             for parsed in clue_list:
                 nums: list[int] = parsed["nums"]
+                expected = sum(parsed["length"]) if parsed.get("length") else 0
                 clue = Clue(
                     number=nums[0],
                     text=parsed["text"],
                     label=", ".join(str(n) for n in nums),
+                    answer=_clean_xw_answer(parsed.get("solution") or "", expected),
                 )
                 if direction == "A":
                     clues_across.append(clue)

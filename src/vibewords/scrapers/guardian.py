@@ -54,6 +54,7 @@ class Slot:
     clue: str
     solution: str | None
     group: list = field(default_factory=list)
+    separator_locations: dict = field(default_factory=dict)
 
 
 def normalise_url(value: str, crossword_type: str = "cryptic") -> str:
@@ -208,6 +209,7 @@ def _parse_entries(data: dict[str, Any]) -> list[Slot]:
             clue=clean_clue_text(str(e.get("clue", ""))),
             solution=(str(e["solution"]).upper() if e.get("solution") else None),
             group=list(e.get("group") or []),
+            separator_locations=dict(e.get("separatorLocations") or {}),
         ))
     return slots
 
@@ -274,11 +276,38 @@ def _build_puzzle_and_solution(
     return puzzle, solution
 
 
+def _slot_answer(slot: Slot) -> str:
+    """Reconstruct the answer with separator punctuation from separatorLocations.
+
+    Guardian uses ',' for space-separated words (→ stored as ' ') and '-' for
+    hyphenated compounds.  Positions are 1-based offsets after which the
+    separator appears within the slot's own letter sequence.
+    """
+    if not slot.solution:
+        return ""
+    letters = re.sub(r"[^A-Z0-9]", "", slot.solution)
+    if not slot.separator_locations:
+        return letters
+    seps: list[tuple[int, str]] = sorted(
+        (int(pos), " " if char == "," else char)
+        for char, positions in slot.separator_locations.items()
+        for pos in positions
+    )
+    result = list(letters)
+    for offset, (pos, sep) in enumerate(seps):
+        result.insert(pos + offset, sep)
+    return "".join(result)
+
+
 def _build_clues(slots: list[Slot]) -> dict[str, list[list[Any]]]:
     clues: dict[str, list[list[Any]]] = {"Across": [], "Down": []}
     for slot in sorted(slots, key=lambda s: (s.direction != "Across", s.number, s.x, s.y)):
         label: int | str = slot.number if slot.human_number == str(slot.number) else slot.human_number
-        clues[slot.direction].append([label, slot.clue])
+        answer = _slot_answer(slot)
+        entry: list[Any] = [label, slot.clue]
+        if answer:
+            entry.append({"solution": answer})
+        clues[slot.direction].append(entry)
     return clues
 
 

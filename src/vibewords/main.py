@@ -265,8 +265,8 @@ class Room:
                 for row in self.puzzle.cells
             ],
             "clues": {
-                "across": [{"number": c.number, "label": c.label or str(c.number), "text": c.text} for c in self.puzzle.clues_across],
-                "down": [{"number": c.number, "label": c.label or str(c.number), "text": c.text} for c in self.puzzle.clues_down],
+                "across": [{"number": c.number, "label": c.label or str(c.number), "text": c.text, "answer": c.answer} for c in self.puzzle.clues_across],
+                "down": [{"number": c.number, "label": c.label or str(c.number), "text": c.text, "answer": c.answer} for c in self.puzzle.clues_down],
             },
         }
         if self.puzzle.solution:

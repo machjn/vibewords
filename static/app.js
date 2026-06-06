@@ -284,6 +284,52 @@ function renderClues() {
   renderClueList('down-clues', puzzle.clues.down, 'down');
 }
 
+// Compute "(5-7)" from "MILLE-FEUILLE", "(3,3)" from "BIG CAT", "(9)" from "SERPENTER".
+// Space → comma in enumeration (multi-word); hyphen → hyphen (compound).
+function _answerToEnum(answer) {
+  const lengths = [];
+  const seps = [];
+  let cur = 0;
+  for (const ch of answer) {
+    if (ch === '-') {
+      if (cur > 0) { lengths.push(cur); seps.push('-'); cur = 0; }
+    } else if (ch === ' ') {
+      if (cur > 0) { lengths.push(cur); seps.push(','); cur = 0; }
+    } else if (/[A-Za-z0-9À-ÿ]/.test(ch)) {
+      cur++;
+    }
+  }
+  if (cur > 0) lengths.push(cur);
+  if (!lengths.length) return '';
+  let result = String(lengths[0]);
+  for (let i = 1; i < lengths.length; i++) result += seps[i - 1] + lengths[i];
+  return `(${result})`;
+}
+
+function clueLengthStr(clue, dir) {
+  // Continuation clues (non-head of a linked chain) show no length
+  if (puzzle && puzzle.links) {
+    const head = chainHead(clue.number, dir);
+    if (head.num !== clue.number || head.dir !== dir) return '';
+  }
+  // Use the stored answer (e.g. "MILLE-FEUILLE") when available
+  if (clue.answer) return _answerToEnum(clue.answer);
+  // Fall back: extract enumeration embedded in clue text (e.g. UK cryptics)
+  const m = clue.text.match(/\(([0-9]+(?:\s*[,\-]\s*[0-9]+)*)\)\s*$/);
+  if (m) return `(${m[1].replace(/\s+/g, '')})`;
+  // Last resort: total cell count from the chain
+  const chain = getChain(clue.number, dir);
+  const segLengths = [];
+  for (const { num, dir: segDir } of chainEntries(chain, dir)) {
+    const pos = findClueStart(num);
+    if (pos) {
+      const n = runCells(pos.row, pos.col, segDir).length;
+      if (n > 0) segLengths.push(n);
+    }
+  }
+  return segLengths.length ? `(${segLengths.join(',')})` : '';
+}
+
 function renderClueList(containerId, clues, dir) {
   const el = document.getElementById(containerId);
   el.innerHTML = '';
@@ -291,7 +337,12 @@ function renderClueList(containerId, clues, dir) {
     const li = document.createElement('li');
     li.className = 'clue-item';
     li.id = `clue-${dir[0]}-${clue.number}`;
-    li.innerHTML = `<span class="clue-num">${escHtml(clue.label || String(clue.number))}.</span>${escHtml(clue.text)}`;
+    const enumStr = clueLengthStr(clue, dir);
+    const rawText = enumStr
+      ? clue.text.replace(/\s*\([0-9]+(?:\s*[,\-]\s*[0-9]+)*\)\s*$/, '').trimEnd()
+      : clue.text;
+    const enumHtml = enumStr ? ` <span class="clue-enum">${escHtml(enumStr)}</span>` : '';
+    li.innerHTML = `<span class="clue-num">${escHtml(clue.label || String(clue.number))}.</span>${escHtml(rawText)}${enumHtml}`;
     li.addEventListener('click', () => jumpToClue(clue.number, dir));
     el.appendChild(li);
   });
@@ -891,7 +942,8 @@ function updateActiveClue(r, c, dir) {
   const clue = clueList.find(cl => cl.number === num);
   const dirLabel = primaryDir === 'across' ? 'Across' : 'Down';
   const numLabel = clue ? (clue.label || String(clue.number)) : String(num);
-  document.getElementById('clue-display').textContent = clue ? `${numLabel} ${dirLabel}: ${clue.text}` : '';
+  const bannerText = clue ? clue.text.replace(/\s*\([0-9]+(?:\s*[,\-]\s*[0-9]+)*\)\s*$/, '').trimEnd() : '';
+  document.getElementById('clue-display').textContent = clue ? `${numLabel} ${dirLabel}: ${bannerText}` : '';
 }
 
 // ── Reveal ─────────────────────────────────────────────────────────────────

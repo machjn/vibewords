@@ -81,8 +81,8 @@ def to_ipuz(crossword: Crossword) -> bytes:
         "dimensions": {"width": crossword.width, "height": crossword.height},
         "puzzle": puzzle_grid,
         "clues": {
-            "Across": [[c.number if c.label == str(c.number) else c.label, c.text] for c in crossword.clues_across],
-            "Down":   [[c.number if c.label == str(c.number) else c.label, c.text] for c in crossword.clues_down],
+            "Across": [_clue_entry(c) for c in crossword.clues_across],
+            "Down":   [_clue_entry(c) for c in crossword.clues_down],
         },
     }
 
@@ -124,6 +124,14 @@ def _parse_cell(row: int, col: int, val) -> Cell:
     return Cell(row=row, col=col, black=False, number=number)
 
 
+def _clue_entry(c: Clue) -> list:
+    label = c.number if c.label == str(c.number) else c.label
+    entry: list = [label, c.text]
+    if c.answer:
+        entry.append({"solution": c.answer})
+    return entry
+
+
 def _parse_clues(raw_clues: list) -> list:
     clues = []
     for item in raw_clues:
@@ -138,7 +146,10 @@ def _parse_clues(raw_clues: list) -> list:
                     number = int(str(raw_num).split(",")[0].strip())
                 except ValueError:
                     number = 0
-            clues.append(Clue(number=number, text=str(item[1]), label=label))
+            answer = ""
+            if len(item) >= 3 and isinstance(item[2], dict):
+                answer = str(item[2].get("solution", "") or "")
+            clues.append(Clue(number=number, text=str(item[1]), label=label, answer=answer))
         elif isinstance(item, dict):
             number = int(item["number"])
             clues.append(Clue(number=number, text=str(item.get("clue", "")), label=str(number)))

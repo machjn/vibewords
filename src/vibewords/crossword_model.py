@@ -14,7 +14,8 @@ class Cell:
 class Clue:
     number: int
     text: str
-    label: str = ""  # display label, e.g. "25, 11" for linked clues
+    label: str = ""   # display label, e.g. "25, 11" for linked clues
+    answer: str = ""  # full answer with separators, e.g. "MILLE-FEUILLE" or "BIG CAT"
 
 
 @dataclass
