@@ -7,14 +7,27 @@ Usage:
   python scripts/xw.py display a.xw b.ipuz
   python scripts/xw.py export puzzle.xw
   python scripts/xw.py export puzzle.xw -o out.ipuz
+  python scripts/xw.py scrape guardian cryptic 30013        # → guardian_cryptic_30013.ipuz
+  python scripts/xw.py scrape guardian cryptic 2026-06-06   # → guardian_cryptic_2026-06-06.ipuz
+  python scripts/xw.py scrape guardian cryptic              # today
+  python scripts/xw.py scrape independent cryptic 2026-06-06
+  python scripts/xw.py scrape https://www.theguardian.com/crosswords/cryptic/30013
 """
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+from datetime import date
 from pathlib import Path
 
 from vibewords.crossword_model import Crossword
+from vibewords.scrapers.guardian import GuardianScraper
+from vibewords.scrapers.independent import IndependentScraper
+
+_GUARDIAN_SCRAPERS: dict[str, GuardianScraper] = {
+    t: GuardianScraper(t) for t in ("cryptic", "quiptic", "quick")
+}
 
 
 def _load(path: Path) -> Crossword:
@@ -70,6 +83,52 @@ def cmd_display(args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def cmd_scrape(args: argparse.Namespace) -> int:
+    target = args.target
+    no_solutions = args.no_solutions
+
+    try:
+        if target.startswith("http"):
+            # URL mode — Guardian is the only scraper that supports URLs
+            scraper = GuardianScraper()
+            ipuz = scraper.fetch_by_url(target, include_solutions=not no_solutions)
+        else:
+            name = target.lower()
+            if name == "guardian":
+                ctype = args.type
+                if ctype not in _GUARDIAN_SCRAPERS:
+                    known = ", ".join(_GUARDIAN_SCRAPERS)
+                    print(f"Error: Guardian TYPE must be one of: {known}", file=sys.stderr)
+                    return 1
+                scraper = _GUARDIAN_SCRAPERS[ctype]
+                ref = args.ref
+                if ref is None:
+                    ipuz = scraper.fetch_today()
+                elif ref.isdigit():
+                    ipuz = scraper.fetch_by_number(int(ref))
+                else:
+                    ipuz = scraper.fetch_for_date(date.fromisoformat(ref))
+            elif name == "independent":
+                if args.type != "cryptic":
+                    print("Error: Independent TYPE must be: cryptic", file=sys.stderr)
+                    return 1
+                scraper = IndependentScraper()
+                puzzle_date = date.fromisoformat(args.ref) if args.ref else date.today()
+                ipuz = scraper.fetch_for_date(puzzle_date)
+            else:
+                known = "guardian, independent"
+                print(f"Error: unknown scraper {name!r}. Known: {known}", file=sys.stderr)
+                return 1
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    out = Path(args.output or scraper.default_output_name(ipuz))
+    out.write_text(json.dumps(ipuz, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(out)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="xw", description="Crossword file tools.")
     sub = parser.add_subparsers(dest="command", metavar="COMMAND")
@@ -83,6 +142,23 @@ def main(argv: list[str] | None = None) -> int:
     p_export.add_argument("file", metavar="FILE", help="Input .xw or .ipuz file")
     p_export.add_argument("-o", "--output", metavar="OUT", help="Output .ipuz path (default: same name as input)")
     p_export.set_defaults(func=cmd_export)
+
+    p_scrape = sub.add_parser("scrape", help="Fetch a puzzle from an online source and save as .ipuz.")
+    p_scrape.add_argument(
+        "target", metavar="TARGET",
+        help="Scraper name (guardian, independent) or a full URL",
+    )
+    p_scrape.add_argument(
+        "type", nargs="?", metavar="TYPE",
+        help="Crossword type (e.g. cryptic, quiptic, quick). Required unless TARGET is a URL.",
+    )
+    p_scrape.add_argument(
+        "ref", nargs="?", metavar="REF",
+        help="ISO date (YYYY-MM-DD) or puzzle number; omit for today",
+    )
+    p_scrape.add_argument("-o", "--output", metavar="OUT", help="Output .ipuz path (default: auto-named)")
+    p_scrape.add_argument("--no-solutions", action="store_true", help="Omit solution grid")
+    p_scrape.set_defaults(func=cmd_scrape)
 
     args = parser.parse_args(argv)
     return args.func(args)
