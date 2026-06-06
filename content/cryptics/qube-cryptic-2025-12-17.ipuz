@@ -7,6 +7,10 @@
     "width": 15,
     "height": 15
   },
+  "title": "Cryptic on a quantum theme",
+  "author": "Qube",
+  "publisher": "Vibewords",
+  "date": "17/12/2025",
   "puzzle": [
     [
       {
@@ -446,9 +450,6 @@
       ]
     ]
   },
-  "title": "Cryptic on a quantum theme",
-  "author": "Qube",
-  "date": "17/12/2025",
   "solution": [
     [
       "D",

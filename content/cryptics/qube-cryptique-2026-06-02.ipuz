@@ -7,6 +7,10 @@
     "width": 15,
     "height": 15
   },
+  "title": "Prototype de Cryptique Française",
+  "author": "Qube",
+  "publisher": "Vibewords",
+  "date": "02/03/2026",
   "puzzle": [
     [
       {
@@ -454,9 +458,6 @@
       ]
     ]
   },
-  "title": "Prototype de Cryptique Française",
-  "author": "Qube",
-  "date": "02/03/2026",
   "links": {
     "Across": {
       "11": [

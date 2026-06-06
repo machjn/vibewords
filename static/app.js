@@ -557,7 +557,7 @@ function updatePlayerList() {
   const others = Object.values(users);
   const allPlayers = [...others, myUserId ? { color: myColor, name: myName, isMe: true } : null].filter(Boolean);
   const total = allPlayers.length;
-  const narrow = window.matchMedia('(max-width: 640px)').matches;
+  const narrow = window.matchMedia('(max-width: 800px)').matches;
 
   if (narrow || total > 4) {
     // Summary chip showing colour dots + count
@@ -1140,6 +1140,12 @@ function solutionAt(r, c) { return ((puzzle.solution[r] || [])[c] || '').toUpper
 
 // ── Button wiring ──────────────────────────────────────────────────────────
 
+document.getElementById('clue-panel-btn').addEventListener('click', () => {
+  const open = document.body.classList.toggle('clue-panel-open');
+  document.getElementById('clue-panel-btn').classList.toggle('active', open);
+  if (open) requestAnimationFrame(fitGridToScreen);
+});
+
 document.getElementById('pencil-btn').addEventListener('click', togglePencil);
 document.getElementById('show-pencil-btn').addEventListener('click', togglePencilVisibility);
 document.getElementById('others-btn').addEventListener('click', toggleOthers);
@@ -1370,7 +1376,7 @@ function _applyTitleLength() {
 _titleMQ.addEventListener('change', _applyTitleLength);
 
 // Re-render player chips when crossing the collapse threshold
-window.matchMedia('(max-width: 640px)').addEventListener('change', updatePlayerList);
+window.matchMedia('(max-width: 800px)').addEventListener('change', updatePlayerList);
 
 // Re-fit when layout breakpoints are crossed; clear any drag-set inline width on collapse
 window.matchMedia('(max-width: 800px)').addEventListener('change', e => {
@@ -1525,6 +1531,9 @@ function _showPicker(row, col, clientX, clientY) {
     const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
     if (dist <= PR + 14) {
       _ptrId = e.pointerId;
+      // Immediately update the highlight so touching a sector selects it
+      // without requiring a drag — important for consecutive input mode.
+      _updatePicker(e.clientX, e.clientY);
     } else {
       _consecutiveMode = false;
       _hidePicker(false);
