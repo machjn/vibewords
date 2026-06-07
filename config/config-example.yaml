@@ -10,7 +10,5 @@ ui:
 
 connectors:
   enabled:
-    - independent
-    - guardian
     - ipuz
     - local

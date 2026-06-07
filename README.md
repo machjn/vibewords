@@ -1,104 +1,15 @@
 # VibeWords
 
-Collaborative crossword solving in real time. Multiple players share a room, see each other's cursors and highlights, and solve together.
+Collaborative crossword solving in real time.
 
-Supports `.ipuz` files and Guardian crosswords by URL.
+Hosted at [vibewords.machjn.com](https://vibewords.machjn.com/).
 
-## Dev Setup
+For development, see [DEV.md](DEV.md). For outstanding items, see [TODO.md](TODO.md). 
 
-Requires Python 3.11+.
+## xw
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
+`xw` is the vibewords CLI that is installed as part of the vibewords python package. 
 
-## Running locally
+It handles parsing vibeword's prototype custom `.xw` human-editable crossword format (see example)[examples/french.xw], exporting to `.ipuz` from `.puz` and `.xw` formats, and scraping crosswords from supported connectors.
 
-```bash
-uvicorn vibewords.main:app --reload
-```
-
-Open http://localhost:8000.
-
-## Configuration
-
-Configuration is read from `config.yaml` in the working directory (override the path with `VIBEWORDS_CONFIG`). Any option can also be set via environment variable using the pattern `VIBEWORDS_<SECTION>_<FIELD>` — env vars take precedence over the file.
-
-```yaml
-server:
-  log_level: "INFO"   # DEBUG, INFO, WARNING, ERROR
-
-room:
-  ttl_hours: 6        # how long an inactive room lives
-
-ui:
-  hold_delay_ms: 300  # hold duration before the mobile letter picker appears
-  hold_drift_px: 8    # cancel the hold if the finger moves this many pixels
-
-connectors:
-  enabled:            # remove any entry to disable that source entirely
-    - guardian
-    - independent
-    - ipuz
-```
-
-Examples:
-
-```bash
-# Use a different config file
-VIBEWORDS_CONFIG=config.prod.yaml uvicorn vibewords.main:app
-
-# Enable debug logging without editing the file
-VIBEWORDS_SERVER_LOG_LEVEL=DEBUG uvicorn vibewords.main:app --reload
-```
-
-## Guardian scraper (standalone)
-
-This is a CLI tool to download a Guardian crossword as an `.ipuz` file 
-
-## Deployment
-
-Right now this is deployed to GCP.
-
-There is a github actions job that builds an OCI image, pushes to the Artifact Registry, and deploys to Cloud Run on commits to main.
-
-## Manual Deployment
-
-Prerequisites:
-
-- Install docker
-- Install `gcloud` CLI
-
-Authenticate to gcloud and configure docker to authenticate to the GCP Artifact Registry:
-
-```shell-script
-gcloud auth login
-gcloud config set project vibewords-0
-gcloud auth configure-docker europe-west2-docker.pkg.dev
-```
-
-Build and push container image:
-
-```
-docker build . -t europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords:0.1.0
-docker push europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords:0.1.0
-```
-
-Deploy to GCP, either via the console or:
-
-```bash
-gcloud run deploy vibewords \
-  --image europe-west2-docker.pkg.dev/vibeword/vibeword/vibewords:0.2.0 \
-  --platform managed \
-  --region europe-west2 \
-  --timeout 3600 \
-  --allow-unauthenticated \
-  --min-instances=1 \
-  --max-instances=1
-```
-
-`--timeout 3600` is required — WebSocket connections count as a single HTTP request and will be dropped at the default 60 s limit. Can't set higher than 3600.
-
-If you scale beyond one instance, add `--session-affinity` so WebSocket connections aren't load-balanced across instances (room state is in-memory and not shared).
+Note that scraping is disabled in the production vibewords webapp. Scraping functionality is intended only for private use; this project does not condone sharing crosswords scraped from sites that rely on ad revenue for their existence.
