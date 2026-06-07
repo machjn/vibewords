@@ -632,8 +632,15 @@
       if (Object.keys(scraperSources).length > 0) {
         content.insertAdjacentHTML('beforeend', buildScrapePanelHTML(scraperSources));
         setupScrapePanel(scraperSources);
-        tabs.push({ id: 'scrape', label: 'Scrape' });
+      } else {
+        content.insertAdjacentHTML('beforeend',
+          `<div class="tab-panel" data-tab="scrape">
+            <div class="section">
+              <p class="status" style="color:var(--text-3)">All scrapers are disabled on this instance of Vibewords.</p>
+            </div>
+          </div>`);
       }
+      tabs.push({ id: 'scrape', label: 'Scrape' });
 
       renderTabBar(tabs);
 
