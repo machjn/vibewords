@@ -1454,6 +1454,16 @@ function _showPicker(row, col, clientX, clientY) {
   interiorTint.style.cssText = 'fill:var(--surface,#fff);fill-opacity:0.2;stroke:none';
   g.appendChild(interiorTint);
 
+  // Per-sector interior highlights — pie slices from centre to the ring inner edge.
+  const interiorSectors = [];
+  for (let i = 0; i < 26; i++) {
+    const ip = document.createElementNS(NS, 'path');
+    ip.setAttribute('d', _pSectorPath(i, RINGr, 0));
+    ip.style.cssText = 'fill:none;stroke:none';
+    g.appendChild(ip);
+    interiorSectors.push(ip);
+  }
+
   const sectors = [], labels = [];
   for (let i = 0; i < 26; i++) {
     const midA = -Math.PI / 2 + (i + 0.5) * (2 * Math.PI / 26);
@@ -1516,6 +1526,7 @@ function _showPicker(row, col, clientX, clientY) {
           _pState.activeIdx = -2;
           _pState.sectors.forEach(p => { p.style.fill = 'var(--surface,#fff)'; });
           _pState.labels.forEach(t => { t.style.fill = 'var(--text,#000)'; });
+          _pState.interiorSectors.forEach(p => { p.style.cssText = 'fill:none;stroke:none'; });
           _pState.centerText.textContent = '⌫';
         }
       }
@@ -1571,7 +1582,7 @@ function _showPicker(row, col, clientX, clientY) {
     return _createPickerBar(cx, barY, seg);
   }).filter(Boolean);
 
-  _pState = { svg, backdropEl, sectors, labels, centerText: cTxt, cx, cy, ringR: RINGr, prOuter: PR, row, col, activeIdx: -1, touchedOuter: false, bsPtr: null, barEls };
+  _pState = { svg, backdropEl, sectors, labels, interiorSectors, centerText: cTxt, cx, cy, ringR: RINGr, prOuter: PR, row, col, activeIdx: -1, touchedOuter: false, bsPtr: null, barEls };
   _updatePickerBar();
 }
 
@@ -1598,6 +1609,11 @@ function _updatePicker(clientX, clientY) {
   });
   _pState.labels.forEach((txt, i) => {
     txt.style.fill = i === newIdx ? 'var(--grid-bg,#fff)' : 'var(--text,#000)';
+  });
+  _pState.interiorSectors.forEach((path, i) => {
+    path.style.cssText = i === newIdx
+      ? 'fill:var(--accent,#3498db);fill-opacity:0.18;stroke:none'
+      : 'fill:none;stroke:none';
   });
   _pState.centerText.textContent = newIdx >= 0 ? _PICK_LETTERS[newIdx] : '';
 }
@@ -1676,6 +1692,7 @@ function _pickerReset(nextRow, nextCol) {
   _pState.bsPtr = null;
   _pState.sectors.forEach(p => { p.style.fill = 'var(--surface,#fff)'; });
   _pState.labels.forEach(t => { t.style.fill = 'var(--text,#000)'; });
+  _pState.interiorSectors.forEach(p => { p.style.cssText = 'fill:none;stroke:none'; });
   _pState.centerText.textContent = '';
   _updatePickerBar();
 }
