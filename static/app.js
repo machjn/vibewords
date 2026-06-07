@@ -1404,11 +1404,10 @@ const _PICK_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 // Radii are fractions of the smaller viewport dimension so the picker
 // stays the same physical size regardless of browser zoom level.
 const _PICK_R_F    = 0.34;   // outer ring  (~128px on a 375px-wide phone)
-const _PICK_r_F    = 0.107;  // inner dead-zone (~40px) — hit-test only
 const _PICK_RING_F = 0.27;   // inner visual edge of the letter ring (~101px)
 const _PICK_LR_F   = 0.305;  // letter label placement — midpoint of ring (~114px)
 
-let _pState = null;   // { svg, sectors, labels, centerText, cx, cy, pr, prOuter, row, col, activeIdx }
+let _pState = null;   // { svg, sectors, labels, centerText, cx, cy, ringR, prOuter, row, col, activeIdx, bsPtr }
 let _ptrId  = null;   // active pointer ID
 let _consecutiveMode = false;
 
@@ -1426,12 +1425,10 @@ function _showPicker(row, col, clientX, clientY) {
   document.getElementById('crossword-grid').style.pointerEvents = 'none';
   clearUserSelection(myUserId);
   const vmin = Math.min(window.innerWidth, window.innerHeight);
-  const PR    = Math.round(vmin * _PICK_R_F);
-  const Pr    = Math.round(vmin * _PICK_r_F);
-  const RINGr = Math.round(vmin * _PICK_RING_F);
-  const PLR   = Math.round(vmin * _PICK_LR_F);
+  const PR      = Math.round(vmin * _PICK_R_F);
+  const RINGr   = Math.round(vmin * _PICK_RING_F);
+  const PLR     = Math.round(vmin * _PICK_LR_F);
   const cTxtSize = Math.round(vmin * 0.058);
-  const discR = Math.round(cTxtSize * 0.9);  // visual disc — just fits the letter/icon
   const margin = PR + 14;
   const cx = Math.min(Math.max(clientX, margin), window.innerWidth  - margin);
   const cy = Math.min(Math.max(clientY, margin), window.innerHeight - margin);
@@ -1493,21 +1490,14 @@ function _showPicker(row, col, clientX, clientY) {
   innerRing.style.cssText = 'fill:none;stroke:var(--border,#ccc);stroke-width:2';
   g.appendChild(innerRing);
 
-  // Inner disc — visual indicator for the backspace dead-zone (hit-zone extends to Pr).
-  const innerFill = document.createElementNS(NS, 'circle');
-  innerFill.setAttribute('r', discR);
-  innerFill.style.cssText = 'fill:var(--surface,#fff);stroke:var(--border,#ccc);stroke-width:2';
-  g.appendChild(innerFill);
-
   const cTxt = document.createElementNS(NS, 'text');
   cTxt.setAttribute('text-anchor', 'middle');
   cTxt.setAttribute('dominant-baseline', 'central');
   cTxt.setAttribute('font-size', cTxtSize);
   cTxt.setAttribute('font-weight', '900');
   cTxt.setAttribute('font-family', 'inherit');
-  cTxt.style.cssText = 'fill:var(--text,#000);paint-order:stroke fill;' +
+  cTxt.style.cssText = 'fill:var(--accent,#3498db);paint-order:stroke fill;' +
     'stroke:var(--surface,#fff);stroke-width:5;stroke-opacity:0.85;pointer-events:none';
-  cTxt.textContent = '⌫';
   g.appendChild(cTxt);
 
   // Fullscreen backdrop — covers the entire viewport so the browser has no
@@ -1516,8 +1506,21 @@ function _showPicker(row, col, clientX, clientY) {
   const backdropEl = document.createElement('div');
   backdropEl.style.cssText = 'position:fixed;inset:0;z-index:498;touch-action:none;pointer-events:auto;background:transparent';
   backdropEl.addEventListener('pointerdown', e => {
-    if (_ptrId !== null) return;  // existing gesture in progress
     e.preventDefault();
+    if (_ptrId !== null) {
+      // Second finger — if it lands inside the ring interior, enter backspace mode.
+      if (_pState && !_pState.bsPtr) {
+        const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+        if (dist < RINGr) {
+          _pState.bsPtr = e.pointerId;
+          _pState.activeIdx = -2;
+          _pState.sectors.forEach(p => { p.style.fill = 'var(--surface,#fff)'; });
+          _pState.labels.forEach(t => { t.style.fill = 'var(--text,#000)'; });
+          _pState.centerText.textContent = '⌫';
+        }
+      }
+      return;
+    }
     // Bar is pointer-events:none so the backdrop is the only hit-target.
     // Check whether the tap landed on the progress bar before treating it
     // as a pick gesture or an outside-tap dismissal.
@@ -1568,7 +1571,7 @@ function _showPicker(row, col, clientX, clientY) {
     return _createPickerBar(cx, barY, seg);
   }).filter(Boolean);
 
-  _pState = { svg, backdropEl, sectors, labels, centerText: cTxt, cx, cy, pr: Pr, prOuter: PR, row, col, activeIdx: -1, touchedOuter: false, barEls };
+  _pState = { svg, backdropEl, sectors, labels, centerText: cTxt, cx, cy, ringR: RINGr, prOuter: PR, row, col, activeIdx: -1, touchedOuter: false, bsPtr: null, barEls };
   _updatePickerBar();
 }
 
@@ -1578,13 +1581,15 @@ function _updatePicker(clientX, clientY) {
   const dist = Math.hypot(dx, dy);
 
   let newIdx = -1;
-  if (dist >= _pState.pr) {
+  if (dist >= _pState.ringR) {
     _pState.touchedOuter = true;
     let a = Math.atan2(dy, dx) + Math.PI / 2;
     if (a < 0) a += 2 * Math.PI;
     newIdx = Math.floor(a / (2 * Math.PI / 26)) % 26;
   }
   if (newIdx === _pState.activeIdx) return;
+  // Don't let the primary finger drifting into the interior cancel backspace mode.
+  if (_pState.activeIdx === -2 && newIdx === -1) return;
   _pState.activeIdx = newIdx;
 
   _pState.sectors.forEach((path, i) => {
@@ -1593,13 +1598,7 @@ function _updatePicker(clientX, clientY) {
   _pState.labels.forEach((txt, i) => {
     txt.style.fill = i === newIdx ? 'var(--grid-bg,#fff)' : 'var(--text,#000)';
   });
-  if (newIdx >= 0) {
-    _pState.centerText.textContent = _PICK_LETTERS[newIdx];
-    _pState.centerText.style.fill = 'var(--accent,#3498db)';
-  } else {
-    _pState.centerText.textContent = '⌫';
-    _pState.centerText.style.fill = 'var(--text,#000)';
-  }
+  _pState.centerText.textContent = newIdx >= 0 ? _PICK_LETTERS[newIdx] : '';
 }
 
 function _wordSegments(row, col, dir) {
@@ -1673,10 +1672,10 @@ function _pickerReset(nextRow, nextCol) {
   _pState.col = nextCol;
   _pState.activeIdx = -1;
   _pState.touchedOuter = false;
+  _pState.bsPtr = null;
   _pState.sectors.forEach(p => { p.style.fill = 'var(--surface,#fff)'; });
   _pState.labels.forEach(t => { t.style.fill = 'var(--text,#000)'; });
-  _pState.centerText.textContent = '⌫';
-  _pState.centerText.style.fill = 'var(--text,#000)';
+  _pState.centerText.textContent = '';
   _updatePickerBar();
 }
 
@@ -1692,8 +1691,8 @@ function _hidePicker(commit) {
       return;
     }
     _consecutiveMode = false;
-  } else if (commit) {
-    // Released in the dead zone — backspace.
+  } else if (commit && activeIdx === -2) {
+    // Primary finger lifted while in two-finger backspace mode.
     handleBackspace(row, col);
     _pickerReset(sel.row, sel.col);
     return;
@@ -1722,6 +1721,7 @@ if (IS_COARSE) {
   const _gridEl = document.getElementById('crossword-grid');
   _gridEl.style.userSelect = 'none';
   _gridEl.style.setProperty('-webkit-touch-callout', 'none');
+  _gridEl.style.touchAction = 'none';  // prevent pull-to-refresh for gestures starting on grid
 
   document.getElementById('crossword-grid').addEventListener('pointerdown', e => {
     const cellEl = e.target.closest('.cell:not(.black)');
@@ -1750,6 +1750,7 @@ if (IS_COARSE) {
 
   document.addEventListener('pointermove', e => {
     if (e.pointerId !== _ptrId) return;
+    e.preventDefault();
     if (_holdTimer !== null) {
       if (Math.hypot(e.clientX - _holdX, e.clientY - _holdY) > HOLD_DRIFT_PX) {
         // Finger moved — cancel hold and switch to swipe tracking.
@@ -1774,6 +1775,17 @@ if (IS_COARSE) {
   });
 
   document.addEventListener('pointerup', e => {
+    // Second-finger backspace gesture: commit on lift of the backspace pointer.
+    if (_pState?.bsPtr === e.pointerId) {
+      _pState.bsPtr = null;
+      if (_pState.activeIdx === -2) {
+        const { row, col } = _pState;
+        _pState.activeIdx = -1;  // clear before reset to avoid double-commit if primary lifts next
+        handleBackspace(row, col);
+        _pickerReset(sel.row, sel.col);
+      }
+      return;
+    }
     if (e.pointerId !== _ptrId) return;
     _ptrId = null;
     if (_holdTimer !== null) {
@@ -1807,6 +1819,7 @@ if (IS_COARSE) {
   });
 
   document.addEventListener('pointercancel', e => {
+    if (_pState?.bsPtr === e.pointerId) { _pState.bsPtr = null; return; }
     if (e.pointerId !== _ptrId) return;
     _ptrId = null;
     clearTimeout(_holdTimer);
