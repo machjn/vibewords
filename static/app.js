@@ -1694,6 +1694,8 @@ function _pickerReset(nextRow, nextCol) {
   _pState.labels.forEach(t => { t.style.fill = 'var(--text,#000)'; });
   _pState.interiorSectors.forEach(p => { p.style.cssText = 'fill:none;stroke:none'; });
   _pState.centerText.textContent = '';
+  // Keep selection overlay on the current target cell so user sees which cell is active.
+  if (myUserId && myColor) showUserSelection(myUserId, myColor, nextRow, nextCol, sel.dir);
   _updatePickerBar();
 }
 
@@ -1834,6 +1836,9 @@ if (IS_COARSE) {
           if (startCellEl) {
             const rect = startCellEl.getBoundingClientRect();
             _showPicker(fr, fc, rect.left + rect.width / 2, rect.top + rect.height / 2);
+            // _showPicker clears the selection; restore it so the first cell is highlighted
+            // through the transparent picker interior.
+            if (myUserId && myColor) showUserSelection(myUserId, myColor, fr, fc, swipeDir);
           }
         }
       }
