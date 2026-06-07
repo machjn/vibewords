@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+if git diff --cached pyproject.toml | grep -q '^+version = '; then
+  echo "pre-commit: version already bumped, skipping"
+else
+  task bump:patch
+  git add pyproject.toml
+fi

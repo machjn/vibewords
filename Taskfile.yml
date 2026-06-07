@@ -6,6 +6,46 @@ vars:
   DEFAULT_SERVICE: vibewords
 
 tasks:
+  bump:patch:
+    desc: Bump the patch version in pyproject.toml (0.0.X)
+    silent: true
+    cmd: |
+      VERSION=$(grep '^version' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+      MAJOR=$(echo $VERSION | cut -d. -f1)
+      MINOR=$(echo $VERSION | cut -d. -f2)
+      PATCH=$(echo $VERSION | cut -d. -f3)
+      NEW="$MAJOR.$MINOR.$((PATCH + 1))"
+      sed -i "s/^version = \"$VERSION\"/version = \"$NEW\"/" pyproject.toml
+      echo "Bumped $VERSION → $NEW"
+
+  bump:minor:
+    desc: Bump the minor version in pyproject.toml (0.X.0)
+    silent: true
+    cmd: |
+      VERSION=$(grep '^version' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+      MAJOR=$(echo $VERSION | cut -d. -f1)
+      MINOR=$(echo $VERSION | cut -d. -f2)
+      NEW="$MAJOR.$((MINOR + 1)).0"
+      sed -i "s/^version = \"$VERSION\"/version = \"$NEW\"/" pyproject.toml
+      echo "Bumped $VERSION → $NEW"
+
+  bump:major:
+    desc: Bump the major version in pyproject.toml (X.0.0)
+    silent: true
+    cmd: |
+      VERSION=$(grep '^version' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+      MAJOR=$(echo $VERSION | cut -d. -f1)
+      NEW="$((MAJOR + 1)).0.0"
+      sed -i "s/^version = \"$VERSION\"/version = \"$NEW\"/" pyproject.toml
+      echo "Bumped $VERSION → $NEW"
+
+  install:hooks:
+    desc: Install git hooks from scripts/ into .git/hooks/
+    cmd: |
+      cp scripts/pre-commit .git/hooks/pre-commit
+      chmod +x .git/hooks/pre-commit
+      echo "Installed pre-commit hook"
+
   dev:
     desc: Run the dev server with live reload
     cmd: uvicorn vibewords.main:app --reload
