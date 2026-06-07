@@ -8,7 +8,8 @@ RUN pip install --no-cache-dir .
 
 COPY static/ ./static/
 COPY content/ ./content/
-COPY config.yaml .
+ARG VIBEWORDS_ENV
+COPY config/config-${VIBEWORDS_ENV}.yaml ./config.yaml
 
 ENV PORT=8080
 

@@ -48,7 +48,9 @@ tasks:
 
   dev:
     desc: Run the dev server with live reload
-    cmd: uvicorn vibewords.main:app --reload
+    env:
+      VIBEWORDS_CONFIG: ./config/config-local.yaml
+    cmd: uvicorn vibewords.main:app --reload --host 0.0.0.0 --port 9000
 
   dev:debug:
     desc: Run the dev server with debug logging
@@ -71,7 +73,7 @@ tasks:
     requires:
       vars: [IMAGE_TAG]
     cmds:
-      - docker build -t {{.REGISTRY}}:{{.IMAGE_TAG}} .
+      - docker build --build-arg VIBEWORDS_ENV=local -t {{.REGISTRY}}:{{.IMAGE_TAG}} .
       - docker push {{.REGISTRY}}:{{.IMAGE_TAG}}
 
   build-ci:
@@ -83,6 +85,7 @@ tasks:
         sh: grep '^version' pyproject.toml | sed 's/version = "\(.*\)"/\1/'
     cmds:
       - docker build
+          --build-arg VIBEWORDS_ENV=prod
           -t {{.REGISTRY}}:{{.IMAGE_TAG}}
           -t {{.REGISTRY}}:{{.VERSION}}
           -t {{.REGISTRY}}:latest
