@@ -376,10 +376,12 @@ function fitGridToScreen() {
 
   const area = document.querySelector('.grid-area');
   if (!area) return;
-  const pad = 48; // 1.5rem padding on each side
+  const mobile = window.innerWidth <= 520;
+  const padX = mobile ? 8 : 48;  // 0.25rem*2 on mobile, 1.5rem*2 on desktop
+  const padY = 48;                // 1.5rem*2 on both layouts
   const authorH = document.getElementById('puzzle-author')?.offsetHeight ?? 0;
-  const availW = area.clientWidth  - pad;
-  const availH = area.clientHeight - pad - authorH;
+  const availW = area.clientWidth  - padX;
+  const availH = area.clientHeight - padY - authorH;
 
   const MAX_SCALE = 1.4; // ~53px cells — comfortable without being oversized
   const scale = Math.min(availW / naturalW, availH / naturalH, MAX_SCALE);
