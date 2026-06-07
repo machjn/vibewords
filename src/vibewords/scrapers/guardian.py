@@ -21,7 +21,6 @@ from the ~6-per-week publication rate and confirmed with a short linear search.
 """
 from __future__ import annotations
 
-import html
 import json
 import re
 from dataclasses import dataclass, field
@@ -29,6 +28,7 @@ from datetime import date, timedelta
 from typing import Any
 from urllib.request import Request, urlopen
 
+from vibewords.clue_format import sanitize_clue_html
 from vibewords.scrapers import Scraper
 
 
@@ -184,8 +184,7 @@ def _puzzle_number_for_date(
 
 
 def clean_clue_text(clue: str) -> str:
-    clue = html.unescape(clue)
-    clue = re.sub(r"<[^>]+>", "", clue)
+    clue = sanitize_clue_html(clue)
     return re.sub(r"\s+", " ", clue).strip()
 
 

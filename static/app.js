@@ -349,7 +349,7 @@ function renderClueList(containerId, clues, dir) {
       ? clue.text.replace(/\s*\([0-9]+(?:\s*[,\-]\s*[0-9]+)*\)\s*$/, '').trimEnd()
       : clue.text;
     const enumHtml = enumStr ? ` <span class="clue-enum">${escHtml(enumStr)}</span>` : '';
-    li.innerHTML = `<span class="clue-num">${escHtml(clue.label || String(clue.number))}.</span>${escHtml(rawText)}${enumHtml}`;
+    li.innerHTML = `<span class="clue-num">${escHtml(clue.label || String(clue.number))}.</span>${sanitizeClueHtml(rawText)}${enumHtml}`;
     li.addEventListener('click', () => jumpToClue(clue.number, dir));
     el.appendChild(li);
   });
@@ -952,7 +952,8 @@ function updateActiveClue(r, c, dir) {
   const dirLabel = primaryDir === 'across' ? 'Across' : 'Down';
   const numLabel = clue ? (clue.label || String(clue.number)) : String(num);
   const bannerText = clue ? clue.text.replace(/\s*\([0-9]+(?:\s*[,\-]\s*[0-9]+)*\)\s*$/, '').trimEnd() : '';
-  document.getElementById('clue-display').textContent = clue ? `${numLabel} ${dirLabel}: ${bannerText}` : '';
+  const clueDisplayEl = document.getElementById('clue-display');
+  clueDisplayEl.innerHTML = clue ? `${escHtml(`${numLabel} ${dirLabel}`)}: ${sanitizeClueHtml(bannerText)}` : '';
 }
 
 // ── Reveal ─────────────────────────────────────────────────────────────────
@@ -1137,6 +1138,15 @@ function toggleCrossout() {
 function getInput(r, c) { return document.querySelector(`input[data-row="${r}"][data-col="${c}"]`); }
 function getCell(r, c)  { return document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`); }
 function escHtml(str)   { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function sanitizeClueHtml(str) {
+  const wrap = document.createElement('span');
+  wrap.innerHTML = str;
+  let el;
+  while ((el = wrap.querySelector(':not(em):not(strong):not(sup):not(sub)')) !== null) {
+    el.replaceWith(...Array.from(el.childNodes));
+  }
+  return wrap.innerHTML;
+}
 // Solution letter at (r,c), upper-cased ('' if none; '#' marks a block).
 function solutionAt(r, c) { return ((puzzle.solution[r] || [])[c] || '').toUpperCase(); }
 

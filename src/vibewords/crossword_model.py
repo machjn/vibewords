@@ -2,6 +2,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Optional
 
+from vibewords.clue_format import sanitize_clue_html
+
 
 def _normalise_date(raw: str) -> str:
     """Normalise a date string to ISO YYYY-MM-DD; return '' if unrecognised."""
@@ -29,6 +31,9 @@ class Clue:
     text: str
     label: str = ""   # display label, e.g. "25, 11" for linked clues
     answer: str = ""  # full answer with separators, e.g. "MILLE-FEUILLE" or "BIG CAT"
+
+    def __post_init__(self):
+        self.text = sanitize_clue_html(self.text)
 
 
 @dataclass

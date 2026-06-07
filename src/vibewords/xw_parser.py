@@ -28,6 +28,17 @@ from lark import Discard, Lark, Transformer, v_args
 
 from vibewords.crossword_model import Cell, Clue, Crossword
 
+_INLINE_FMT = [
+    (re.compile(r'\*\*(.+?)\*\*'), r'<strong>\1</strong>'),
+    (re.compile(r'\*(.+?)\*'),     r'<em>\1</em>'),
+]
+
+
+def _apply_inline_fmt(text: str) -> str:
+    for pattern, repl in _INLINE_FMT:
+        text = pattern.sub(repl, text)
+    return text
+
 # ---------------------------------------------------------------------------
 # Grammar
 
@@ -179,7 +190,7 @@ class _XwTransformer(Transformer):
         return list(parts)
 
     def clue_body(self, token):
-        return str(token).strip()
+        return _apply_inline_fmt(str(token).strip())
 
     _TRAILING_LENGTH = re.compile(r'\s*\(\d[\d,\-]*\)\s*$')
 
