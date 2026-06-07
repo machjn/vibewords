@@ -21,6 +21,7 @@ File structure
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Optional
 
 from lark import Discard, Lark, Transformer, v_args
@@ -30,39 +31,9 @@ from vibewords.crossword_model import Cell, Clue, Crossword
 # ---------------------------------------------------------------------------
 # Grammar
 
-_GRAMMAR = r"""
-start            : metadata_section grid_section clue_section
+_GRAMMAR_FILE = Path(__file__).with_name("xw.lark")
 
-metadata_section : meta_entry* SEPARATOR NEWLINE*
-meta_entry       : META_KEY "=" META_VAL NEWLINE
-
-grid_section     : grid_row+ NEWLINE*
-grid_row         : CELL+ NEWLINE
-
-clue_section     : direction_block+
-direction_block  : DIRECTION NEWLINE+ clue_line* NEWLINE*
-clue_line        : clue_nums "." clue_body "(" length_spec ")" solution NEWLINE
-                 | clue_nums "." clue_body "(" length_spec ")"           NEWLINE
-                 | clue_nums "."           ref_body                      NEWLINE
-
-clue_nums        : INT ("," INT)*
-clue_body        : /[^\n]+?(?=[ \t]*\(\d[\d,\-]*\))/
-length_spec      : INT (("," | "-") INT)*
-solution         : /[^\n]+/
-ref_body         : /[^\n]+/
-
-META_KEY         : /[A-Za-z][A-Za-z0-9]*/
-META_VAL         : /[^\n]+/
-SEPARATOR        : /---+[^\n]*/
-CELL             : /[A-Za-zÀ-ÿ0-9#\-]/
-DIRECTION        : /ACROSS|DOWN/i
-INT              : /[0-9]+/
-NEWLINE          : /\r?\n/
-
-%ignore /[ \t]+/
-"""
-
-_parser = Lark(_GRAMMAR, parser="earley", lexer="dynamic", ambiguity="resolve")
+_parser = Lark(_GRAMMAR_FILE.read_text(encoding="utf-8"), parser="earley", lexer="dynamic", ambiguity="resolve")
 
 
 # ---------------------------------------------------------------------------

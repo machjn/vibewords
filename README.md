@@ -13,7 +13,7 @@ For development, see [DEV.md](DEV.md). For outstanding items, see [TODO.md](TODO
 
 `xw` is the vibewords CLI that is installed as part of the vibewords python package. 
 
-It handles parsing vibeword's prototype custom `.xw` human-editable crossword format (see example)[examples/french.xw], exporting to `.ipuz` from `.puz` and `.xw` formats, and scraping crosswords from supported connectors.
+It handles parsing vibeword's prototype custom `.xw` human-editable crossword format (see the [grammar definition](src/vibewords/xw.lark) and [sample](examples/french.xw) for details), exporting to `.ipuz` from `.puz` and `.xw` formats, and scraping crosswords from supported connectors.
 
 Note that scraping is disabled in the production vibewords webapp. Scraping functionality in the CLI is intended only for private use; this project does not condone sharing crosswords scraped from sites that rely on ad revenue for their existence.
 
