@@ -1584,6 +1584,8 @@ function _showPicker(row, col, clientX, clientY) {
 
   _pState = { svg, backdropEl, sectors, labels, interiorSectors, centerText: cTxt, cx, cy, ringR: RINGr, prOuter: PR, row, col, activeIdx: -1, touchedOuter: false, bsPtr: null, barEls };
   _updatePickerBar();
+  // clearUserSelection above wiped the word highlight; restore it now that pState is set.
+  if (myUserId && myColor) showUserSelection(myUserId, myColor, row, col, sel.dir);
 }
 
 function _updatePicker(clientX, clientY) {
@@ -1836,9 +1838,6 @@ if (IS_COARSE) {
           if (startCellEl) {
             const rect = startCellEl.getBoundingClientRect();
             _showPicker(fr, fc, rect.left + rect.width / 2, rect.top + rect.height / 2);
-            // _showPicker clears the selection; restore it so the first cell is highlighted
-            // through the transparent picker interior.
-            if (myUserId && myColor) showUserSelection(myUserId, myColor, fr, fc, swipeDir);
           }
         }
       }
