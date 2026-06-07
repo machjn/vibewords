@@ -1403,9 +1403,10 @@ document.addEventListener('click', e => {
 const _PICK_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 // Radii are fractions of the smaller viewport dimension so the picker
 // stays the same physical size regardless of browser zoom level.
-const _PICK_R_F  = 0.34;   // outer ring  (~128px on a 375px-wide phone)
-const _PICK_r_F  = 0.107;  // inner dead-zone (~40px)
-const _PICK_LR_F = 0.23;   // letter label placement (~86px)
+const _PICK_R_F    = 0.34;   // outer ring  (~128px on a 375px-wide phone)
+const _PICK_r_F    = 0.107;  // inner dead-zone (~40px) — hit-test only
+const _PICK_RING_F = 0.27;   // inner visual edge of the letter ring (~101px)
+const _PICK_LR_F   = 0.305;  // letter label placement — midpoint of ring (~114px)
 
 let _pState = null;   // { svg, sectors, labels, centerText, cx, cy, pr, prOuter, row, col, activeIdx }
 let _ptrId  = null;   // active pointer ID
@@ -1425,9 +1426,12 @@ function _showPicker(row, col, clientX, clientY) {
   document.getElementById('crossword-grid').style.pointerEvents = 'none';
   clearUserSelection(myUserId);
   const vmin = Math.min(window.innerWidth, window.innerHeight);
-  const PR  = Math.round(vmin * _PICK_R_F);
-  const Pr  = Math.round(vmin * _PICK_r_F);
-  const PLR = Math.round(vmin * _PICK_LR_F);
+  const PR    = Math.round(vmin * _PICK_R_F);
+  const Pr    = Math.round(vmin * _PICK_r_F);
+  const RINGr = Math.round(vmin * _PICK_RING_F);
+  const PLR   = Math.round(vmin * _PICK_LR_F);
+  const cTxtSize = Math.round(vmin * 0.058);
+  const discR = Math.round(cTxtSize * 0.9);  // visual disc — just fits the letter/icon
   const margin = PR + 14;
   const cx = Math.min(Math.max(clientX, margin), window.innerWidth  - margin);
   const cy = Math.min(Math.max(clientY, margin), window.innerHeight - margin);
@@ -1451,7 +1455,7 @@ function _showPicker(row, col, clientX, clientY) {
     const midA = -Math.PI / 2 + (i + 0.5) * (2 * Math.PI / 26);
 
     const path = document.createElementNS(NS, 'path');
-    path.setAttribute('d', _pSectorPath(i, PR, Pr));
+    path.setAttribute('d', _pSectorPath(i, PR, RINGr));
     path.style.cssText = 'fill:var(--surface,#fff);stroke:var(--border,#ccc);stroke-width:0.5';
     g.appendChild(path);
     sectors.push(path);
@@ -1473,28 +1477,30 @@ function _showPicker(row, col, clientX, clientY) {
   // Outer lip — sits on top of the sector outer arcs for a clean edge.
   const outerRing = document.createElementNS(NS, 'circle');
   outerRing.setAttribute('r', PR);
-  outerRing.style.cssText = 'fill:none;stroke:var(--border,#ccc);stroke-width:6';
+  outerRing.style.cssText = 'fill:none;stroke:var(--border,#ccc);stroke-width:2';
   g.appendChild(outerRing);
 
-  // Inner fill — covers the ragged inner arc edges of the sectors exactly.
-  const innerFill = document.createElementNS(NS, 'circle');
-  innerFill.setAttribute('r', Pr);
-  innerFill.style.cssText = 'fill:var(--surface,#fff);stroke:none';
-  g.appendChild(innerFill);
-
-  // Inner lip ring — clean border around the dead zone.
+  // Inner lip ring — sits on top of the sector inner arcs to cover anti-aliasing seams.
   const innerRing = document.createElementNS(NS, 'circle');
-  innerRing.setAttribute('r', Pr);
+  innerRing.setAttribute('r', RINGr);
   innerRing.style.cssText = 'fill:none;stroke:var(--border,#ccc);stroke-width:2';
   g.appendChild(innerRing);
+
+  // Inner disc — visual indicator for the backspace dead-zone (hit-zone extends to Pr).
+  const innerFill = document.createElementNS(NS, 'circle');
+  innerFill.setAttribute('r', discR);
+  innerFill.style.cssText = 'fill:var(--surface,#fff);stroke:var(--border,#ccc);stroke-width:2';
+  g.appendChild(innerFill);
 
   const cTxt = document.createElementNS(NS, 'text');
   cTxt.setAttribute('text-anchor', 'middle');
   cTxt.setAttribute('dominant-baseline', 'central');
-  cTxt.setAttribute('font-size', Math.round(vmin * 0.058));
+  cTxt.setAttribute('font-size', cTxtSize);
   cTxt.setAttribute('font-weight', '900');
   cTxt.setAttribute('font-family', 'inherit');
-  cTxt.style.fill = 'var(--accent,#3498db)';
+  cTxt.style.cssText = 'fill:var(--text,#000);paint-order:stroke fill;' +
+    'stroke:var(--surface,#fff);stroke-width:5;stroke-opacity:0.85;pointer-events:none';
+  cTxt.textContent = '⌫';
   g.appendChild(cTxt);
 
   // Fullscreen backdrop — covers the entire viewport so the browser has no
@@ -1662,7 +1668,8 @@ function _pickerReset(nextRow, nextCol) {
   _pState.touchedOuter = false;
   _pState.sectors.forEach(p => { p.style.fill = 'var(--surface,#fff)'; });
   _pState.labels.forEach(t => { t.style.fill = 'var(--text,#000)'; });
-  _pState.centerText.textContent = '';
+  _pState.centerText.textContent = '⌫';
+  _pState.centerText.style.fill = 'var(--text,#000)';
   _updatePickerBar();
 }
 
