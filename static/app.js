@@ -1450,6 +1450,13 @@ function _showPicker(row, col, clientX, clientY) {
   g.setAttribute('transform', `translate(${mid},${mid})`);
   g.style.pointerEvents = 'none'; // Firefox doesn't inherit pointer-events:none from <svg>
 
+  // Translucent interior tint — drawn first so solid sectors paint over their portion;
+  // only the gap between the disc and the letter ring remains translucent.
+  const interiorTint = document.createElementNS(NS, 'circle');
+  interiorTint.setAttribute('r', RINGr);
+  interiorTint.style.cssText = 'fill:var(--surface,#fff);fill-opacity:0.2;stroke:none';
+  g.appendChild(interiorTint);
+
   const sectors = [], labels = [];
   for (let i = 0; i < 26; i++) {
     const midA = -Math.PI / 2 + (i + 0.5) * (2 * Math.PI / 26);
