@@ -1580,16 +1580,17 @@ function _updatePicker(clientX, clientY) {
   const dx = clientX - _pState.cx, dy = clientY - _pState.cy;
   const dist = Math.hypot(dx, dy);
 
+  // The full pie-slice of each letter is a valid hit zone, not just the ring arc.
+  // Angle always determines the letter; distance only gates the outer-ring marker.
   let newIdx = -1;
-  if (dist >= _pState.ringR) {
-    _pState.touchedOuter = true;
+  if (dist > 0) {
     let a = Math.atan2(dy, dx) + Math.PI / 2;
     if (a < 0) a += 2 * Math.PI;
     newIdx = Math.floor(a / (2 * Math.PI / 26)) % 26;
   }
+  if (dist >= _pState.ringR) _pState.touchedOuter = true;
   if (newIdx === _pState.activeIdx) return;
-  // Don't let the primary finger drifting into the interior cancel backspace mode.
-  if (_pState.activeIdx === -2 && newIdx === -1) return;
+  if (_pState.activeIdx === -2) return;  // backspace mode locked; primary finger can't override
   _pState.activeIdx = newIdx;
 
   _pState.sectors.forEach((path, i) => {
@@ -1696,6 +1697,9 @@ function _hidePicker(commit) {
     handleBackspace(row, col);
     _pickerReset(sel.row, sel.col);
     return;
+  } else if (commit && _consecutiveMode) {
+    // No letter selected in consecutive mode — keep picker open for a retry tap.
+    return;
   } else {
     _consecutiveMode = false;
   }
@@ -1717,11 +1721,14 @@ if (IS_COARSE) {
   let _swipeCells = [];
   let _isSwiping = false;
 
-  // Suppress long-press text selection on grid cells and their inputs.
+  // Prevent pull-to-refresh for the whole page and text-selection during drags.
+  document.body.style.overscrollBehavior = 'none';
+  document.addEventListener('selectstart', e => { if (_ptrId !== null) e.preventDefault(); });
+
   const _gridEl = document.getElementById('crossword-grid');
   _gridEl.style.userSelect = 'none';
   _gridEl.style.setProperty('-webkit-touch-callout', 'none');
-  _gridEl.style.touchAction = 'none';  // prevent pull-to-refresh for gestures starting on grid
+  _gridEl.style.touchAction = 'none';
 
   document.getElementById('crossword-grid').addEventListener('pointerdown', e => {
     const cellEl = e.target.closest('.cell:not(.black)');
