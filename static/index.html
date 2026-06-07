@@ -504,7 +504,11 @@
           return;
         }
         list.innerHTML = puzzles.map(p => {
-          const meta = [p.date, p.publisher].filter(Boolean).join(' · ');
+          const byline = p.author && p.publisher ? `${p.author} via ${p.publisher}`
+                       : p.author                ? p.author
+                       : p.publisher             ? `via ${p.publisher}`
+                       :                           '';
+          const meta = [p.date, byline].filter(Boolean).join(' · ');
           return `<button class="local-puzzle-item" data-path="${escHtml(p.id)}">
             <span class="local-puzzle-title">${escHtml(p.title || p.id)}</span>
             ${meta ? `<span class="local-puzzle-meta">${escHtml(meta)}</span>` : ''}
@@ -594,6 +598,19 @@
       const hasLocal = !!sources['local'];
       const tabs     = [];
 
+      // Inject local panel
+      if (hasLocal) {
+        content.insertAdjacentHTML('beforeend', `
+          <div class="tab-panel" data-tab="local">
+            <div class="section">
+              <div class="section-label"><span>house library</span></div>
+              <div id="local-list" class="local-list"></div>
+              <p class="status" id="local-status"></p>
+            </div>
+          </div>`);
+        tabs.push({ id: 'local', label: 'House Puzzles' });
+      }
+
       // Inject upload panel
       if (appCfg.ipuz_enabled) {
         content.insertAdjacentHTML('beforeend', `
@@ -610,19 +627,6 @@
           </div>`);
         setupUploadZone();
         tabs.push({ id: 'upload', label: 'Upload' });
-      }
-
-      // Inject local panel
-      if (hasLocal) {
-        content.insertAdjacentHTML('beforeend', `
-          <div class="tab-panel" data-tab="local">
-            <div class="section">
-              <div class="section-label"><span>Local library</span></div>
-              <div id="local-list" class="local-list"></div>
-              <p class="status" id="local-status"></p>
-            </div>
-          </div>`);
-        tabs.push({ id: 'local', label: 'Local' });
       }
 
       // Inject combined scrape panel for all non-local sources

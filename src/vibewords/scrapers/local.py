@@ -51,6 +51,7 @@ class LocalConnector(Connector):
                 "title": data.get("title") or ipuz_file.stem,
                 "category": category,
                 "date": data.get("date"),
+                "author": data.get("author"),
                 "publisher": data.get("publisher"),
             })
 
